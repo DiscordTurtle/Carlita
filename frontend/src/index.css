@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+/* ========== Tailwind v4 custom theme tokens ========== */
+@theme {
+  --color-sunflower: #F5C518;
+  --color-sunflower-light: #FFF9C4;
+  --color-sunflower-dark: #E6A817;
+  --color-amber-warm: #F59E0B;
+  --color-petal: #FBBF24;
+  --color-stem: #16A34A;
+  --color-center: #92400E;
+  --color-cream: #FFFDE7;
+  --color-pixel-bg: #1a0a2e;
+  --font-handwriting: "Dancing Script", cursive;
+  --font-pixel: "Press Start 2P", monospace;
+  --font-body: "Poppins", sans-serif;
+}
+
+/* ========== Keyframe animations ========== */
+@keyframes petalDrift {
+  0%   { transform: translateY(-10vh) translateX(0)    rotate(0deg);   opacity: 0; }
+  10%  { opacity: 0.85; }
+  90%  { opacity: 0.85; }
+  100% { transform: translateY(110vh) translateX(60px) rotate(720deg); opacity: 0; }
+}
+@keyframes bloomIn {
+  0%   { transform: scale(0) rotate(-30deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(5deg);  opacity: 1; }
+  100% { transform: scale(1) rotate(0deg);    opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.15); }
+}
+@keyframes pixelBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+@keyframes fadeInUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes stemGrow {
+  from { transform: scaleY(0); transform-origin: bottom; }
+  to   { transform: scaleY(1); transform-origin: bottom; }
+}
+@keyframes float-side {
+  0%, 100% { transform: translateX(0) rotate(-3deg); }
+  50%       { transform: translateX(18px) rotate(3deg); }
+}
+
+/* ========== Global resets ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: "Poppins", sans-serif; background: #FFFDE7; overflow-x: hidden; }
+::-webkit-scrollbar       { width: 8px; }
+::-webkit-scrollbar-track { background: #FFF9C4; }
+::-webkit-scrollbar-thumb { background: #F5C518; border-radius: 4px; }
+
+/* ========== Utility classes ========== */
+.font-handwriting { font-family: "Dancing Script", cursive !important; }
+.font-pixel        { font-family: "Press Start 2P", monospace !important; }
+.text-shimmer {
+  background: linear-gradient(90deg,#F5C518,#fff,#F5C518,#FFF9C4,#F5C518);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+.btn-sunflower {
+  background: linear-gradient(135deg,#F5C518,#E6A817);
+  color: #1C1917; font-weight: 700;
+  padding: .75rem 2rem; border-radius: 9999px;
+  border: none; cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  box-shadow: 0 4px 15px #F5C51866;
+}
+.btn-sunflower:hover  { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 25px #F5C518aa; }
+.btn-sunflower:active { transform: scale(.97); }
+.pixel-border { border: 4px solid; box-shadow: 4px 4px 0 0 rgba(0,0,0,.6); }
+.animate-petal-drift  { animation: petalDrift linear infinite; }
+.animate-heartbeat    { animation: heartbeat 1.2s ease-in-out infinite; }
+.animate-bounce-g     { animation: bounce-gentle 2.5s ease-in-out infinite; }
+.animate-rotate-slow  { animation: rotate-slow 12s linear infinite; }
+.animate-float-side   { animation: float-side 4s ease-in-out infinite; }
+.animate-bloom        { animation: bloomIn 0.8s cubic-bezier(.34,1.56,.64,1) forwards; }
+.animate-pixel-blink  { animation: pixelBlink 1s step-end infinite; }
+.animate-fade-up      { animation: fadeInUp .6s ease forwards; }
+
+/* ========== Vite default overrides (keep #root flexible) ========== */
+#root {
+  min-height: 100svh;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  border: none;
+}
+
+/* Legacy placeholder so old selectors below don't crash */
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #FFFDE7;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #F5C518;
+  --accent-bg: rgba(245,197,24,0.1);
+  --accent-border: rgba(245,197,24,0.5);
+  --social-bg: rgba(244,243,236,0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
