@@ -30,11 +30,17 @@ export default function Character({
         transition: 'transform 0s'
       }}
     >
-      {/* nametag — Growtopia "Legend" style: title icon + rainbow name, no box */}
-      <div className="mb-1 flex items-center gap-2 text-xl">
+      {/* nametag — Growtopia "Legend" style: title icon + rainbow name, no box.
+         Nudged left so the icon+name pair visually centers above the head
+         (the icon adds width on the left side of the name). */}
+      <div
+        className="mb-1 flex items-center gap-2 text-xl"
+        style={{ transform: 'translateX(-18px)' }}
+      >
         <img
           src="/sprites/leg-title.webp"
           alt=""
+          draggable={false}
           className="pixel"
           style={{ width: 32, height: 32, imageRendering: 'pixelated' }}
         />

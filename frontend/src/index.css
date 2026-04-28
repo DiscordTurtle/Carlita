@@ -164,7 +164,7 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   100% { color: #FF5252; }
 }
 .legend-name {
-  animation: legendName 3s linear infinite;
+  animation: legendName 9s linear infinite;
   text-shadow:
     -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000,
     -1px -1px #000, 1px -1px #000, -1px 1px #000, 1px 1px #000;

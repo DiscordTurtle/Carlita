@@ -2,12 +2,20 @@ import React from 'react'
 import Seed from './Seed.jsx'
 import { playSfx } from '../useAudio.js'
 
-// Growtopia-style hotbar inspired by inspo/punch_menu.png
-// Slots: punch (fist), seed, plus 2 empty cosmetic slots.
+// Growtopia-style hotbar matching inspo/punch_menu.png.
+// Colors are pulled directly from README.md (COLORS).
+const C = {
+  background:    '#223a42',
+  cells:         '#abd9ea',
+  outline:       '#aee2f7',
+  selected:      '#f1b404',
+  selectedOuter: '#ffdd25'
+}
+
 export default function ActionMenu({ selected, onSelect, hasSeed }) {
   const slots = [
-    { id: 'punch', icon: <Fist />,        count: null,             enabled: true,    label: 'PUNCH' },
-    { id: 'seed',  icon: <Seed size={28} />, count: hasSeed ? 1 : 0, enabled: hasSeed, label: 'SEED'  },
+    { id: 'punch', icon: <PunchIcon />,         count: null,             enabled: true,    label: 'PUNCH' },
+    { id: 'seed',  icon: <Seed size={34} />,    count: hasSeed ? 1 : 0,  enabled: hasSeed, label: 'SEED'  },
     { id: 'empty1', icon: null, count: null, enabled: false, label: '' },
     { id: 'empty2', icon: null, count: null, enabled: false, label: '' }
   ]
@@ -18,11 +26,14 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
       style={{ pointerEvents: 'auto' }}
     >
       <div
-        className="flex gap-1 p-1 rounded-xl"
+        className="flex gap-[6px] p-[6px] rounded-[10px]"
         style={{
-          background: 'linear-gradient(#1B6FA8, #0E4670)',
-          border: '3px solid #08344F',
-          boxShadow: '0 4px 0 #052238, 0 8px 14px rgba(0,0,0,.4), inset 0 0 0 2px #2a8fcd'
+          background: C.background,
+          border: `3px solid ${C.background}`,
+          boxShadow:
+            `inset 0 0 0 2px ${C.outline},
+             0 4px 0 rgba(0,0,0,.45),
+             0 8px 16px rgba(0,0,0,.35)`
         }}
       >
         {slots.map(s => {
@@ -37,20 +48,15 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
                 playSfx('/sounds/click.wav', { volume: 0.5 })
                 onSelect(s.id)
               }}
-              className="relative w-14 h-14 rounded-md transition-transform active:translate-y-[1px]"
+              className="relative w-16 h-16 rounded-[6px] transition-transform active:translate-y-[1px]"
               style={{
-                background: s.enabled
-                  ? 'linear-gradient(#3FA9F5, #1670B5)'
-                  : 'linear-gradient(#234e6e, #15334a)',
-                border: isSel
-                  ? '3px solid #FADB5F'
-                  : s.id === 'seed'
-                  ? '3px solid #5BAE2F'
-                  : '3px solid #08344F',
-                boxShadow: isSel
-                  ? '0 0 0 2px #DE911D, inset 0 0 8px rgba(255, 219, 95, .5)'
-                  : 'inset 0 -3px 0 rgba(0,0,0,.25)',
-                cursor: s.enabled ? 'pointer' : 'not-allowed'
+                // Cell background matches the dark frame blue from the inspo,
+                // distinguished from the frame by its thicker lighter outline.
+                background: C.background,
+                border: `4px solid ${C.outline}`,
+                boxShadow: 'inset 0 -3px 0 rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.35)',
+                cursor: s.enabled ? 'pointer' : 'not-allowed',
+                opacity: s.enabled ? 1 : 0.85
               }}
               title={s.label}
             >
@@ -58,11 +64,15 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
                 {s.icon}
               </div>
               {s.count != null && (
-                <div className="absolute right-0.5 bottom-0 text-white text-[11px] font-black"
-                     style={{ textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000' }}>
+                <div
+                  className="absolute right-1 bottom-0 text-white text-xs font-black"
+                  style={{ textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000' }}
+                >
                   {s.count}
                 </div>
               )}
+              {/* Selected indicator: 4 L-shaped corner brackets only — no full outline. */}
+              {isSel && <SelectionCorners />}
             </button>
           )
         })}
@@ -71,25 +81,49 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
   )
 }
 
-function Fist() {
-  // Tan pixel-art fist matching inspo
+function PunchIcon() {
   return (
-    <div style={{ width: 30, height: 30, position: 'relative' }} className="pixel">
-      <div style={{
-        position: 'absolute', inset: 2,
-        background: 'linear-gradient(#E2B084, #B47542)',
-        border: '2px solid #5A3416',
-        borderRadius: 4,
-        boxShadow: 'inset -2px -2px 0 rgba(0,0,0,.25), inset 2px 2px 0 rgba(255,255,255,.2)'
-      }} />
-      <div style={{
-        position: 'absolute', left: 6, top: 9, width: 16, height: 4,
-        background: '#5A3416', borderRadius: 1
-      }} />
-      <div style={{
-        position: 'absolute', left: 6, top: 16, width: 16, height: 4,
-        background: '#5A3416', borderRadius: 1
-      }} />
-    </div>
+    <img
+      src="/sprites/punch.png"
+      alt="punch"
+      draggable={false}
+      className="pixel"
+      style={{ width: 38, height: 38, imageRendering: 'pixelated' }}
+    />
+  )
+}
+
+// Gold "broken outline" — looks like a single yellow frame around the slot
+// with a small gap cut out of the middle of each edge. Implemented as 4
+// L-shaped corner pieces whose arms are long enough to nearly meet, so the
+// effect reads as one outline rather than four separate accents.
+function SelectionCorners() {
+  const armLen = 26   // length of each arm — long enough that the four
+                      // corners visually connect into an interrupted frame
+  const armW   = 4    // stroke thickness — matches the cell's blue outline
+  const off    = -4   // sits just outside the slot
+
+  const cornerStyle = (side) => {
+    const isTop    = side.top    !== undefined
+    const isLeft   = side.left   !== undefined
+    return {
+      position: 'absolute',
+      width:  armLen,
+      height: armLen,
+      pointerEvents: 'none',
+      ...(isTop  ? { top:    off } : { bottom: off }),
+      ...(isLeft ? { left:   off } : { right:  off }),
+      [`border${isTop  ? 'Top'  : 'Bottom'}`]: `${armW}px solid ${C.selected}`,
+      [`border${isLeft ? 'Left' : 'Right'}`]:  `${armW}px solid ${C.selected}`
+    }
+  }
+
+  return (
+    <>
+      <div style={cornerStyle({ top: 0, left:  0 })} />
+      <div style={cornerStyle({ top: 0, right: 0 })} />
+      <div style={cornerStyle({ bottom: 0, left:  0 })} />
+      <div style={cornerStyle({ bottom: 0, right: 0 })} />
+    </>
   )
 }
