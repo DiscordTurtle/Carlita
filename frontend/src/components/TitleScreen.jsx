@@ -72,7 +72,7 @@ export default function TitleScreen({ onPlay }) {
             Carlita &amp; Cristian
           </div>
           <div className="mt-2 text-xl md:text-2xl font-bold gt-stroke text-[#FFF3C4]">
-            One Year ♥
+            Un an impreuna ♥
           </div>
         </div>
 

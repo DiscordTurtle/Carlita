@@ -1,4 +1,4 @@
-# Carlita & Cristian — One Year ♥
+# Carlita & Cristian — Un an impreuna ♥
 
 A tiny Growtopia-inspired anniversary mini-game built with React + Vite + Tailwind.
 
