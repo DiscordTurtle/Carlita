@@ -31,11 +31,21 @@ function computeLayout(w) {
 }
 
 const STAGE = {
-  WALK_TO_TREE:   'walk_to_tree',
-  PLANT:          'plant',
-  PUNCH:          'punch',
-  COLLECT_LETTER: 'collect_letter',
-  LETTER_OPEN:    'letter_open'
+  WALK_TO_TREE:   'walk_to_tree',   // initial; Carlita has the seed
+  PUNCH:          'punch',          // seed planted; tree shows the letter
+  COLLECT_LETTER: 'collect_letter', // tree punched; letter dropped in world
+  HAS_LETTER:     'has_letter',     // letter is in inventory; not yet opened
+  LETTER_OPEN:    'letter_open'     // modal open with fireworks
+}
+
+// Display names for the tree at each stage. Shown in a tooltip when Carlita
+// is standing close to it.
+const TREE_NAME = {
+  [STAGE.WALK_TO_TREE]: 'Wishing Tree',
+  [STAGE.PUNCH]:        'Love Letter Tree',
+  [STAGE.COLLECT_LETTER]: null,    // tree is broken at this point
+  [STAGE.HAS_LETTER]:     null,
+  [STAGE.LETTER_OPEN]:    null
 }
 
 export default function GameScene() {
@@ -70,13 +80,15 @@ export default function GameScene() {
   const [carlitaY, setCarlitaY] = useState(0)        // height above ground
   const [facing,   setFacing]   = useState('right')
   const [walking,  setWalking]  = useState(false)
-  const [hasSeed,  setHasSeed]  = useState(true)
-  const [stage,    setStage]    = useState(STAGE.WALK_TO_TREE)
+  const [hasSeed,    setHasSeed]    = useState(true)
+  const [hasLetter,  setHasLetter]  = useState(false)
+  const [stage,      setStage]      = useState(STAGE.WALK_TO_TREE)
   const [showLetterModal, setShowLetterModal] = useState(false)
   const [showFireworks,   setShowFireworks]   = useState(false)
   const [showLove,        setShowLove]        = useState(false)
   const [punchSwing,      setPunchSwing]      = useState(false)
   const [selectedSlot,    setSelectedSlot]    = useState('seed')
+  const [showTreeName,    setShowTreeName]    = useState(false)
 
   // refs for game loop
   const keys       = useRef({ left: false, right: false })
@@ -107,10 +119,11 @@ export default function GameScene() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // keep the seed slot from being "selected" once spent
+  // Drop selection back to "punch" when whatever is selected goes away.
   useEffect(() => {
-    if (!hasSeed && selectedSlot === 'seed') setSelectedSlot('punch')
-  }, [hasSeed, selectedSlot])
+    if (selectedSlot === 'seed'   && !hasSeed)   setSelectedSlot('punch')
+    if (selectedSlot === 'letter' && !hasLetter) setSelectedSlot('punch')
+  }, [hasSeed, hasLetter, selectedSlot])
 
   // ---------- Keyboard ----------
   useEffect(() => {
@@ -171,10 +184,14 @@ export default function GameScene() {
       // collision: walking onto Cristian → "Te iubesc"
       setShowLove(Math.abs(nx - L.cristianX) < 60)
 
-      // stage progression: walking over the dropped letter
+      // proximity: show the tree's name tag while Carlita stands near it
+      setShowTreeName(Math.abs(nx - L.treeX) < 110)
+
+      // stage progression: walking over the dropped letter picks it up into
+      // the inventory. The modal opens later, when she selects it.
       if (stageRef.current === STAGE.COLLECT_LETTER &&
           Math.abs(nx - L.treeX) < 60) {
-        triggerLetter()
+        pickUpLetter()
       }
 
       // step sounds (only when grounded + moving)
@@ -202,6 +219,8 @@ export default function GameScene() {
       tryPlant()
     } else if (slot === 'punch') {
       tryPunch()
+    } else if (slot === 'letter') {
+      openLetter()
     }
   }
 
@@ -216,7 +235,7 @@ export default function GameScene() {
     }
     setHasSeed(false)
     setStage(STAGE.PUNCH)
-    playSfx('/sounds/achievement.wav', { volume: 0.7 })
+    playSfx('/sounds/tree-splice.mp3', { volume: 0.8 })
   }
 
   function tryPunch() {
@@ -230,7 +249,18 @@ export default function GameScene() {
     }
   }
 
-  function triggerLetter() {
+  // Walk-over pickup: stash the letter in the inventory; nothing visual yet.
+  function pickUpLetter() {
+    if (stageRef.current !== STAGE.COLLECT_LETTER) return
+    setStage(STAGE.HAS_LETTER)
+    setHasLetter(true)
+    setSelectedSlot('letter')   // auto-highlight the new item, like Growtopia
+    playSfx('/sounds/achievement.wav', { volume: 0.7 })
+  }
+
+  // Selecting/clicking the letter slot from the inventory plays the fireworks
+  // and opens the letter modal — the original "walked-over" experience.
+  function openLetter() {
     if (stageRef.current === STAGE.LETTER_OPEN) return
     setStage(STAGE.LETTER_OPEN)
     setShowFireworks(true)
@@ -240,12 +270,22 @@ export default function GameScene() {
     setTimeout(() => setShowLetterModal(true), 900)
   }
 
+  // Selecting an inventory slot just picks it; the actual "use" happens when
+  // Carlita clicks the world while holding the item.
+  function handleSelectSlot(id) {
+    setSelectedSlot(id)
+  }
+
   const treeStage =
     stage === STAGE.WALK_TO_TREE ? 'tree' :
     stage === STAGE.PUNCH        ? 'letter-tree' :
                                    'punched'
 
-  const showLetterDrop = stage === STAGE.COLLECT_LETTER || stage === STAGE.LETTER_OPEN
+  // Dropped letter is only visible while it's lying on the ground. Once
+  // Carlita picks it up (HAS_LETTER) the world copy disappears.
+  const showLetterDrop = stage === STAGE.COLLECT_LETTER
+
+  const treeName = TREE_NAME[stage]
 
   return (
     <div
@@ -299,6 +339,11 @@ export default function GameScene() {
         {/* Tree */}
         <Tree x={layout.treeX} stage={treeStage} />
 
+        {/* Tree name tooltip — appears when Carlita stands near it */}
+        {treeName && showTreeName && (
+          <TreeNameTag x={layout.treeX} name={treeName} />
+        )}
+
         {/* Dropped letter */}
         {showLetterDrop && <DroppedLetter x={layout.treeX} />}
 
@@ -330,8 +375,9 @@ x={carlitaX}
       {/* Action menu (Growtopia-style hotbar) */}
       <ActionMenu
         selected={selectedSlot}
-        onSelect={setSelectedSlot}
+        onSelect={handleSelectSlot}
         hasSeed={hasSeed}
+        hasLetter={hasLetter}
       />
 
       {/* Fireworks layer */}
@@ -341,6 +387,38 @@ x={carlitaX}
       {showLetterModal && (
         <LetterModal onClose={() => { setShowFireworks(false); setShowLetterModal(false) }} />
       )}
+    </div>
+  )
+}
+
+// Floating tooltip above the tree showing its current name.
+// Outer wrapper owns the absolute positioning + centering; the inner
+// wrapper plays the pop animation. They're separated so the pop's
+// `transform: scale(...)` keyframes can't override `translateX(-50%)`.
+function TreeNameTag({ x, name }) {
+  return (
+    <div
+      className="absolute pointer-events-none"
+      style={{
+        left: x,
+        bottom: 280,
+        transform: 'translateX(-50%)',
+        zIndex: 25
+      }}
+    >
+      <div className="animate-pop">
+        <div
+          className="px-3 py-1 rounded text-white text-sm font-extrabold tracking-wide whitespace-nowrap"
+          style={{
+            background: '#223a42',
+            border: '2px solid #aee2f7',
+            boxShadow: '0 3px 0 rgba(0,0,0,.45), 0 6px 12px rgba(0,0,0,.3)',
+            textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000'
+          }}
+        >
+          {name}
+        </div>
+      </div>
     </div>
   )
 }

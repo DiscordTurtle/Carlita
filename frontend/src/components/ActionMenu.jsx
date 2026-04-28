@@ -3,7 +3,6 @@ import Seed from './Seed.jsx'
 import { playSfx } from '../useAudio.js'
 
 // Growtopia-style hotbar matching inspo/punch_menu.png.
-// Colors are pulled directly from README.md (COLORS).
 const C = {
   background:    '#223a42',
   cells:         '#abd9ea',
@@ -12,19 +11,49 @@ const C = {
   selectedOuter: '#ffdd25'
 }
 
-export default function ActionMenu({ selected, onSelect, hasSeed }) {
+// Display names for each inventory item — shown in the tooltip above the bar.
+const ITEM_NAME = {
+  punch:  'Fist',
+  seed:   'Love Seed',
+  letter: 'Love Letter'
+}
+
+export default function ActionMenu({ selected, onSelect, hasSeed, hasLetter }) {
   const slots = [
-    { id: 'punch', icon: <PunchIcon />,         count: null,             enabled: true,    label: 'PUNCH' },
-    { id: 'seed',  icon: <Seed size={34} />,    count: hasSeed ? 1 : 0,  enabled: hasSeed, label: 'SEED'  },
-    { id: 'empty1', icon: null, count: null, enabled: false, label: '' },
-    { id: 'empty2', icon: null, count: null, enabled: false, label: '' }
+    { id: 'punch', icon: <PunchIcon />, count: null, enabled: true },
+    // Seed slot disappears (becomes empty) once the seed has been planted.
+    hasSeed
+      ? { id: 'seed',  icon: <Seed size={34} />, count: 1,    enabled: true  }
+      : { id: 'seed',  icon: null,                count: null, enabled: false },
+    // Letter appears in slot 3 once Carlita walks over the dropped letter.
+    hasLetter
+      ? { id: 'letter', icon: <LetterIcon />, count: 1,    enabled: true  }
+      : { id: 'empty1', icon: null,           count: null, enabled: false },
+    { id: 'empty2', icon: null, count: null, enabled: false }
   ]
+
+  const tooltipText = ITEM_NAME[selected]
 
   return (
     <div
-      className="absolute left-1/2 -translate-x-1/2 bottom-3 z-[60] select-none"
+      className="absolute left-1/2 -translate-x-1/2 bottom-3 z-[60] select-none flex flex-col items-center"
       style={{ pointerEvents: 'auto' }}
     >
+      {/* Selected-item tooltip — sits just above the bar, like Growtopia */}
+      {tooltipText && (
+        <div
+          className="mb-2 px-3 py-1 rounded text-white text-sm font-extrabold tracking-wide"
+          style={{
+            background: C.background,
+            border: `2px solid ${C.outline}`,
+            boxShadow: '0 3px 0 rgba(0,0,0,.45), 0 6px 12px rgba(0,0,0,.3)',
+            textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000'
+          }}
+        >
+          {tooltipText}
+        </div>
+      )}
+
       <div
         className="flex gap-[6px] p-[6px] rounded-[10px]"
         style={{
@@ -50,15 +79,12 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
               }}
               className="relative w-16 h-16 rounded-[6px] transition-transform active:translate-y-[1px]"
               style={{
-                // Cell background matches the dark frame blue from the inspo,
-                // distinguished from the frame by its thicker lighter outline.
                 background: C.background,
                 border: `4px solid ${C.outline}`,
                 boxShadow: 'inset 0 -3px 0 rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.35)',
                 cursor: s.enabled ? 'pointer' : 'not-allowed',
                 opacity: s.enabled ? 1 : 0.85
               }}
-              title={s.label}
             >
               <div className="absolute inset-0 flex items-center justify-center">
                 {s.icon}
@@ -71,7 +97,6 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
                   {s.count}
                 </div>
               )}
-              {/* Selected indicator: 4 L-shaped corner brackets only — no full outline. */}
               {isSel && <SelectionCorners />}
             </button>
           )
@@ -93,19 +118,28 @@ function PunchIcon() {
   )
 }
 
-// Gold "broken outline" — looks like a single yellow frame around the slot
-// with a small gap cut out of the middle of each edge. Implemented as 4
-// L-shaped corner pieces whose arms are long enough to nearly meet, so the
-// effect reads as one outline rather than four separate accents.
+function LetterIcon() {
+  return (
+    <img
+      src="/sprites/letter.webp"
+      alt="letter"
+      draggable={false}
+      className="pixel"
+      style={{ width: 38, height: 38, imageRendering: 'pixelated', objectFit: 'contain' }}
+    />
+  )
+}
+
+// Gold "broken outline" — looks like a single yellow frame with a small gap
+// in the middle of each edge.
 function SelectionCorners() {
-  const armLen = 26   // length of each arm — long enough that the four
-                      // corners visually connect into an interrupted frame
-  const armW   = 4    // stroke thickness — matches the cell's blue outline
-  const off    = -4   // sits just outside the slot
+  const armLen = 26
+  const armW   = 4
+  const off    = -4
 
   const cornerStyle = (side) => {
-    const isTop    = side.top    !== undefined
-    const isLeft   = side.left   !== undefined
+    const isTop  = side.top  !== undefined
+    const isLeft = side.left !== undefined
     return {
       position: 'absolute',
       width:  armLen,
