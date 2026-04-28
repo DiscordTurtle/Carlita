@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Character from './Character.jsx'
 import Tree from './Tree.jsx'
 import Seed from './Seed.jsx'
@@ -41,6 +41,30 @@ const STAGE = {
 export default function GameScene() {
   const [layout, setLayout] = useState(() =>
     computeLayout(typeof window !== 'undefined' ? window.innerWidth : 1280))
+
+  // Clouds drifting continuously across the sky. Each one has a random
+  // direction (left or right) and a random speed. Negative animation-delays
+  // distribute their phases so they're already spread across the viewport
+  // on the very first frame.
+  const clouds = useMemo(() => {
+    const count = 12
+    return Array.from({ length: count }).map((_, i) => {
+      // Speed: 22s (fast) to 95s (slow), well distributed
+      const duration = 22 + ((i * 19) % 73)
+      // Half go right (normal), half go left (reverse)
+      const direction = i % 2 === 0 ? 'normal' : 'reverse'
+      const delay = -(duration * ((i * 17) % 100) / 100)
+      return {
+        id: i,
+        topPct:  4 + (i * 7 + (i % 3) * 5) % 50,   // top half of sky
+        width:   110 + ((i * 53) % 5) * 40,        // 110 / 150 / 190 / 230 / 270
+        opacity: 0.5 + ((i * 13) % 50) / 100,
+        duration,
+        direction,
+        delay
+      }
+    })
+  }, [])
 
   const [carlitaX, setCarlitaX] = useState(layout.carlitaStartX)
   const [carlitaY, setCarlitaY] = useState(0)        // height above ground
@@ -228,25 +252,44 @@ export default function GameScene() {
       className="absolute inset-0 overflow-hidden cursor-crosshair"
       onClick={handleWorldClick}
     >
-      {/* Background */}
+      {/* Background — empty mountains/sky, sun & clouds added on top */}
       <div
         className="absolute inset-0"
         style={{
-          backgroundImage: 'url(/sprites/bg-sunny.png)',
+          backgroundImage: 'url(/sprites/bg-empty.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          imageRendering: 'pixelated',
-          filter: 'saturate(1.05) brightness(1.05) hue-rotate(-8deg)'
+          imageRendering: 'pixelated'
         }}
       />
       {/* sunflower-yellow tint */}
       <div className="absolute inset-0 pointer-events-none"
-           style={{ background: 'linear-gradient(180deg, rgba(255,243,196,.35), rgba(247,201,72,.25) 60%, rgba(222,145,29,.35))' }} />
+           style={{ background: 'linear-gradient(180deg, rgba(255,243,196,.30), rgba(247,201,72,.18) 60%, rgba(222,145,29,.28))' }} />
 
-      {/* Sun */}
+      {/* Sun — top-right corner, behind the clouds */}
       <img src="/sprites/sun.png" alt=""
+           draggable={false}
            className="absolute pixel animate-sun-glow"
-           style={{ top: 24, right: 36, width: 130 }} />
+           style={{ top: 24, right: 36, width: 300, zIndex: 1 }} />
+
+      {/* Drifting clouds — in front of the sun, flying continuously L/R at varied speeds */}
+      {clouds.map(c => (
+        <img
+          key={c.id}
+          src="/sprites/clouds.png"
+          alt=""
+          draggable={false}
+          className="absolute pixel pointer-events-none"
+          style={{
+            top:    `${c.topPct}%`,
+            left:   0,
+            width:  c.width,
+            opacity: c.opacity,
+            animation: `cloudFly ${c.duration}s linear ${c.delay}s infinite ${c.direction}`,
+            zIndex: 2
+          }}
+        />
+      ))}
 
       {/* World */}
       <div className="absolute inset-0">
@@ -263,8 +306,7 @@ export default function GameScene() {
         <Character
           src="/sprites/cristian.png"
           name="Cristian"
-          flag="❤"
-          x={layout.cristianX}
+x={layout.cristianX}
           facing="left"
           walking={false}
         />
@@ -273,8 +315,7 @@ export default function GameScene() {
         <Character
           src="/sprites/carlita.png"
           name="Carlita"
-          flag="❤"
-          x={carlitaX}
+x={carlitaX}
           y={carlitaY}
           facing={facing}
           walking={walking}

@@ -7,7 +7,7 @@ import React from 'react'
 export default function Character({
   src, name, x, y = 0,
   facing = 'right', walking = false, punching = false,
-  scale = 1, flag = null, holding = null
+  scale = 1, holding = null
 }) {
   const flip = facing === 'left' ? -1 : 1
   const height = 110 * scale
@@ -30,10 +30,15 @@ export default function Character({
         transition: 'transform 0s'
       }}
     >
-      {/* nametag */}
-      <div className="mb-1 flex items-center gap-1 px-2 py-[2px] rounded bg-black/40 text-white text-xs font-bold tracking-wide">
-        {flag && <span className="text-[10px]">{flag}</span>}
-        <span>{name}</span>
+      {/* nametag — Growtopia "Legend" style: title icon + rainbow name, no box */}
+      <div className="mb-1 flex items-center gap-2 text-xl">
+        <img
+          src="/sprites/leg-title.webp"
+          alt=""
+          className="pixel"
+          style={{ width: 32, height: 32, imageRendering: 'pixelated' }}
+        />
+        <span className="legend-name">{name}</span>
       </div>
 
       {/* avatar wrapper */}

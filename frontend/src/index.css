@@ -96,11 +96,12 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   z-index: 2;
 }
 
-/* Cloud drift — defined globally so it works with inline `animation:` styles
-   even if Tailwind hasn't emitted the keyframes for this name. */
-@keyframes cloudDrift {
-  0%   { transform: translateX(-30vw); }
-  100% { transform: translateX( 30vw); }
+/* Clouds fly continuously across the sky from off-left to off-right.
+   Use `animation-direction: reverse` to make a cloud fly right-to-left
+   instead. Defined globally so it works with inline `animation:` styles. */
+@keyframes cloudFly {
+  from { transform: translateX(-30vw); }
+  to   { transform: translateX(130vw); }
 }
 
 /* Sun spirals away on PLAY hover and spirals back when un-hovered.
@@ -119,3 +120,54 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
 }
 .sun-spiral-out { animation: sunSpiralOut 1.2s cubic-bezier(.55,.05,.35,1) forwards; }
 .sun-spiral-in  { animation: sunSpiralIn  1.0s cubic-bezier(.22,1,.36,1)   forwards; }
+
+/* Title-screen curtain transition: vertical cut down the middle.
+   Each half is a full-viewport element rendering the SAME centered title
+   content. clip-path masks each one to its respective half. On split, each
+   element translates off-screen to its own side. Because both elements are
+   full-viewport, the centered content (logo, button, sun) is at viewport
+   center in both, so the seam aligns perfectly. */
+.split-half {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Lock dimensions defensively so nothing — Tailwind preflight, parent
+     constraints, or container queries — can shrink the half. */
+  width: 100vw !important;
+  min-width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  transition: transform 1.1s cubic-bezier(.65,.05,.25,1);
+  will-change: transform;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+}
+/* Polygon coords are unambiguous % of the element's box, so the seam lands
+   exactly at the element's horizontal midpoint (= viewport center, since
+   the element is 100vw wide). */
+.split-left  { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); }
+.split-right { clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%); }
+.split-go-left  { transform: translateX(-100vw); }
+.split-go-right { transform: translateX( 100vw); }
+
+/* "Legend"-style nametag — title text cycles through the rainbow. */
+@keyframes legendName {
+  0%   { color: #FF5252; }
+  16%  { color: #FFB142; }
+  33%  { color: #FFE066; }
+  50%  { color: #7BD389; }
+  66%  { color: #4FC3F7; }
+  83%  { color: #B388FF; }
+  100% { color: #FF5252; }
+}
+.legend-name {
+  animation: legendName 3s linear infinite;
+  text-shadow:
+    -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000,
+    -1px -1px #000, 1px -1px #000, -1px 1px #000, 1px 1px #000;
+  font-weight: 800;
+  letter-spacing: .03em;
+}

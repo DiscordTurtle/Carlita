@@ -2,23 +2,25 @@ import React, { useEffect, useRef, useState } from 'react'
 import TitleScreen from './components/TitleScreen.jsx'
 import GameScene from './components/GameScene.jsx'
 
+const SPLIT_DURATION_MS = 1100  // matches .split-half transition in index.css
+
 export default function App() {
-  const [started, setStarted] = useState(false)
+  const [splitting, setSplitting] = useState(false)  // split transition in progress
+  const [started,   setStarted]   = useState(false)  // game scene fully revealed
   const audioRef = useRef(null)
 
-  // Single <audio> element shared across screens — swap src on transition.
   useEffect(() => {
     const a = new Audio('/sounds/about_theme.mp3')
     a.loop = true
     a.volume = 0.35
     audioRef.current = a
-    // Try autoplay (many browsers will block until user gesture; that's fine —
-    // the PLAY button click counts as the gesture and re-triggers play below).
     a.play().catch(() => {})
     return () => { a.pause(); a.src = '' }
   }, [])
 
   function handlePlay() {
+    if (splitting || started) return
+    // Music swap on the same gesture so browsers allow it.
     const a = audioRef.current
     if (a) {
       a.pause()
@@ -27,20 +29,27 @@ export default function App() {
       a.volume = 0.35
       a.play().catch(() => {})
     }
-    setStarted(true)
+    // Mount GameScene behind, then start the split slide.
+    setSplitting(true)
+    // Once the slide finishes, drop the title screen entirely.
+    setTimeout(() => setStarted(true), SPLIT_DURATION_MS)
   }
 
-  // Ensure the title song actually starts on the user's first click,
-  // in case autoplay was blocked.
   function handleFirstInteraction() {
     const a = audioRef.current
-    if (a && a.paused && !started) a.play().catch(() => {})
+    if (a && a.paused && !started && !splitting) a.play().catch(() => {})
   }
+
+  // GameScene mounts as soon as the split begins so the slide reveals it
+  // gradually instead of swapping in only at the end.
+  const gameMounted = started || splitting
+  // Title stays mounted until the split fully completes.
+  const titleVisible = !started
 
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
-      {!started && <TitleScreen onPlay={handlePlay} />}
-      {started  && <GameScene />}
+      {gameMounted  && <GameScene />}
+      {titleVisible && <TitleScreen onPlay={handlePlay} splitting={splitting} />}
     </div>
   )
 }
