@@ -102,3 +102,20 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   0%   { transform: translateX(-30vw); }
   100% { transform: translateX( 30vw); }
 }
+
+/* Sun spirals away on PLAY hover and spirals back when un-hovered.
+   The combined rotate+translate produces a spiral path because translate
+   happens in the rotated frame, so as the angle accumulates the
+   translation vector sweeps outward. */
+@keyframes sunSpiralOut {
+  0%   { transform: rotate(0deg)   translateX(0)    scale(1);   opacity: 1; }
+  60%  {                                                          opacity: .9; }
+  100% { transform: rotate(900deg) translateX(85vw) scale(0.15); opacity: 0; }
+}
+@keyframes sunSpiralIn {
+  0%   { transform: rotate(900deg) translateX(85vw) scale(0.15); opacity: 0; }
+  40%  {                                                          opacity: .6; }
+  100% { transform: rotate(0deg)   translateX(0)    scale(1);   opacity: 1; }
+}
+.sun-spiral-out { animation: sunSpiralOut 1.2s cubic-bezier(.55,.05,.35,1) forwards; }
+.sun-spiral-in  { animation: sunSpiralIn  1.0s cubic-bezier(.22,1,.36,1)   forwards; }
