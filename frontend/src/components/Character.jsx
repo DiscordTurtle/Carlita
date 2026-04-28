@@ -18,9 +18,13 @@ export default function Character({
 
   return (
     <div
-      className="absolute bottom-[120px] flex flex-col items-center pointer-events-none"
+      className="absolute flex flex-col items-center pointer-events-none"
       style={{
         left: x,
+        // Anchor 108px from screen bottom = ~12px below grass top, so the
+        // avatar's transparent foot-padding overlaps the grass and the feet
+        // visibly land on it.
+        bottom: 108,
         transform: `translate(-50%, ${-y}px)`,
         zIndex: 20,
         transition: 'transform 0s'

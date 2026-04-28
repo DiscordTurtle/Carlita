@@ -82,12 +82,6 @@ export default function TitleScreen({ onPlay }) {
         >
           ▶ PLAY
         </button>
-
-        <div className="text-[#5A3416]/80 text-sm font-bold mt-4 text-center max-w-md">
-          Move with <kbd className="px-1 bg-white/60 rounded">←</kbd> <kbd className="px-1 bg-white/60 rounded">→</kbd> ·
-          jump with <kbd className="px-1 bg-white/60 rounded">Space</kbd> ·
-          act with <kbd className="px-1 bg-white/60 rounded">click</kbd>
-        </div>
       </div>
     </div>
   )

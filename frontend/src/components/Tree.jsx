@@ -5,8 +5,8 @@ export default function Tree({ x, stage }) {
   const swaying = stage !== 'punched'
   return (
     <div
-      className="absolute bottom-[120px] flex flex-col items-center pointer-events-none"
-      style={{ left: x, transform: 'translateX(-50%)', zIndex: 10 }}
+      className="absolute flex flex-col items-center pointer-events-none"
+      style={{ left: x, bottom: 108, transform: 'translateX(-50%)', zIndex: 10 }}
     >
       <div className={swaying ? 'animate-idle-bob' : ''}>
         {/* leaves */}

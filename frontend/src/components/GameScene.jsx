@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Character from './Character.jsx'
 import Tree from './Tree.jsx'
-import Sign from './Sign.jsx'
 import Seed from './Seed.jsx'
 import DroppedLetter from './DroppedLetter.jsx'
 import Fireworks from './Fireworks.jsx'
@@ -11,16 +10,24 @@ import ActionMenu from './ActionMenu.jsx'
 import { playSfx } from '../useAudio.js'
 
 const WORLD = {
-  carlitaStartX: 180,
-  cristianX:     920,
-  treeX:         560,
-  groundY:       120,
-  walkSpeed:     3.6,
-  minX:          80,
-  maxX:          1080,
-  jumpVel:       12,   // initial upward velocity (px/frame)
-  gravity:       0.55, // px/frame^2
-  maxJump:       180   // sanity cap
+  groundY:   120,
+  walkSpeed: 4.2,
+  jumpVel:   13,   // initial upward velocity (px/frame)
+  gravity:   0.6,  // px/frame^2
+  maxJump:   220
+}
+
+// Layout positions are computed from window width so the scene actually spans
+// the screen instead of clumping on the left.
+function computeLayout(w) {
+  return {
+    width:         w,
+    carlitaStartX: Math.round(w * 0.10),
+    treeX:         Math.round(w * 0.50),
+    cristianX:     Math.round(w * 0.90),
+    minX:          60,
+    maxX:          w - 60
+  }
 }
 
 const STAGE = {
@@ -32,7 +39,10 @@ const STAGE = {
 }
 
 export default function GameScene() {
-  const [carlitaX, setCarlitaX] = useState(WORLD.carlitaStartX)
+  const [layout, setLayout] = useState(() =>
+    computeLayout(typeof window !== 'undefined' ? window.innerWidth : 1280))
+
+  const [carlitaX, setCarlitaX] = useState(layout.carlitaStartX)
   const [carlitaY, setCarlitaY] = useState(0)        // height above ground
   const [facing,   setFacing]   = useState('right')
   const [walking,  setWalking]  = useState(false)
@@ -45,18 +55,33 @@ export default function GameScene() {
   const [selectedSlot,    setSelectedSlot]    = useState('seed')
 
   // refs for game loop
-  const keys      = useRef({ left: false, right: false })
-  const vy        = useRef(0)
-  const yRef      = useRef(0)
-  const xRef      = useRef(WORLD.carlitaStartX)
-  const stageRef  = useRef(stage)
-  const seedRef   = useRef(hasSeed)
-  const slotRef   = useRef(selectedSlot)
-  const lastStep  = useRef(0)
+  const keys       = useRef({ left: false, right: false })
+  const vy         = useRef(0)
+  const yRef       = useRef(0)
+  const xRef       = useRef(layout.carlitaStartX)
+  const stageRef   = useRef(stage)
+  const seedRef    = useRef(hasSeed)
+  const slotRef    = useRef(selectedSlot)
+  const lastStep   = useRef(0)
+  const layoutRef  = useRef(layout)
 
-  useEffect(() => { stageRef.current = stage }, [stage])
-  useEffect(() => { seedRef.current  = hasSeed }, [hasSeed])
-  useEffect(() => { slotRef.current  = selectedSlot }, [selectedSlot])
+  useEffect(() => { stageRef.current  = stage }, [stage])
+  useEffect(() => { seedRef.current   = hasSeed }, [hasSeed])
+  useEffect(() => { slotRef.current   = selectedSlot }, [selectedSlot])
+  useEffect(() => { layoutRef.current = layout }, [layout])
+
+  // Resize handler — recompute layout (and clamp Carlita) on viewport changes.
+  useEffect(() => {
+    const onResize = () => {
+      const next = computeLayout(window.innerWidth)
+      setLayout(next)
+      const clamped = Math.max(next.minX, Math.min(next.maxX, xRef.current))
+      xRef.current = clamped
+      setCarlitaX(clamped)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // keep the seed slot from being "selected" once spent
   useEffect(() => {
@@ -93,7 +118,7 @@ export default function GameScene() {
   function tryJump() {
     if (yRef.current <= 0.001) {
       vy.current = WORLD.jumpVel
-      playSfx('/sounds/blip.wav', { volume: 0.45, rate: 1.4 })
+      playSfx('/sounds/jump.wav', { volume: 0.7 })
     }
   }
 
@@ -101,12 +126,13 @@ export default function GameScene() {
   useEffect(() => {
     let raf
     const tick = () => {
+      const L = layoutRef.current
       // horizontal
       let nx = xRef.current
       let moved = false
       if (keys.current.left)  { nx -= WORLD.walkSpeed; setFacing('left');  moved = true }
       if (keys.current.right) { nx += WORLD.walkSpeed; setFacing('right'); moved = true }
-      nx = Math.max(WORLD.minX, Math.min(WORLD.maxX, nx))
+      nx = Math.max(L.minX, Math.min(L.maxX, nx))
       xRef.current = nx
       setCarlitaX(nx)
 
@@ -119,11 +145,11 @@ export default function GameScene() {
       setCarlitaY(ny)
 
       // collision: walking onto Cristian → "Te iubesc"
-      setShowLove(Math.abs(nx - WORLD.cristianX) < 50)
+      setShowLove(Math.abs(nx - L.cristianX) < 60)
 
       // stage progression: walking over the dropped letter
       if (stageRef.current === STAGE.COLLECT_LETTER &&
-          Math.abs(nx - WORLD.treeX) < 50) {
+          Math.abs(nx - L.treeX) < 60) {
         triggerLetter()
       }
 
@@ -142,7 +168,7 @@ export default function GameScene() {
   }, [])
 
   function nearTree() {
-    return Math.abs(xRef.current - WORLD.treeX) < 90
+    return Math.abs(xRef.current - layoutRef.current.treeX) < 110
   }
 
   // ---------- Click to act ----------
@@ -190,16 +216,6 @@ export default function GameScene() {
     setTimeout(() => setShowLetterModal(true), 900)
   }
 
-  // ---------- Hint banner ----------
-  const hint =
-    stage === STAGE.WALK_TO_TREE
-      ? 'Walk to the tree → select the SEED → click on the world to plant'
-    : stage === STAGE.PUNCH
-      ? 'Now select the FIST → click to punch the tree'
-    : stage === STAGE.COLLECT_LETTER
-      ? 'Walk over the letter ♥'
-    : '♥'
-
   const treeStage =
     stage === STAGE.WALK_TO_TREE ? 'tree' :
     stage === STAGE.PUNCH        ? 'letter-tree' :
@@ -237,35 +253,18 @@ export default function GameScene() {
         {/* ground strip */}
         <div className="dirt-tile absolute left-0 right-0 bottom-0" style={{ height: WORLD.groundY }} />
 
-        {/* Signs */}
-        {stage === STAGE.WALK_TO_TREE && (
-          <Sign x={WORLD.carlitaStartX + 60} y={WORLD.groundY + 110}>
-            {'Walk to the tree →\nSelect the seed and click'}
-          </Sign>
-        )}
-        {stage === STAGE.PUNCH && (
-          <Sign x={WORLD.treeX} y={WORLD.groundY + 230}>
-            {'Switch to the FIST\nthen click the world'}
-          </Sign>
-        )}
-        {stage === STAGE.COLLECT_LETTER && (
-          <Sign x={WORLD.treeX} y={WORLD.groundY + 230}>
-            {'Walk over the letter ♥'}
-          </Sign>
-        )}
-
         {/* Tree */}
-        <Tree x={WORLD.treeX} stage={treeStage} />
+        <Tree x={layout.treeX} stage={treeStage} />
 
         {/* Dropped letter */}
-        {showLetterDrop && <DroppedLetter x={WORLD.treeX} />}
+        {showLetterDrop && <DroppedLetter x={layout.treeX} />}
 
         {/* Cristian (right, facing left, idle) */}
         <Character
           src="/sprites/cristian.png"
           name="Cristian"
           flag="❤"
-          x={WORLD.cristianX}
+          x={layout.cristianX}
           facing="left"
           walking={false}
         />
@@ -284,14 +283,7 @@ export default function GameScene() {
         />
 
         {/* Te iubesc speech bubble */}
-        {showLove && <SpeechBubble x={WORLD.cristianX} text="Te iubesc ♥" />}
-      </div>
-
-      {/* HUD: hint banner */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 gt-panel px-4 py-2 max-w-[520px] text-center">
-        <div className="text-[#3A1F0C] text-sm font-bold whitespace-pre-line">
-          {hint}
-        </div>
+        {showLove && <SpeechBubble x={layout.cristianX} text="Te iubesc ♥" />}
       </div>
 
       {/* Action menu (Growtopia-style hotbar) */}
@@ -300,11 +292,6 @@ export default function GameScene() {
         onSelect={setSelectedSlot}
         hasSeed={hasSeed}
       />
-
-      {/* Controls overlay */}
-      <div className="absolute bottom-3 right-3 z-50 gt-panel px-3 py-2 text-[#3A1F0C] text-xs font-bold">
-        ← →  walk  ·  SPACE  jump  ·  click  use
-      </div>
 
       {/* Fireworks layer */}
       {showFireworks && <Fireworks count={22} />}

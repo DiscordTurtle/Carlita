@@ -67,9 +67,6 @@ export default function ActionMenu({ selected, onSelect, hasSeed }) {
           )
         })}
       </div>
-      <div className="text-center mt-1 text-white text-[10px] font-bold gt-stroke">
-        click world to use
-      </div>
     </div>
   )
 }

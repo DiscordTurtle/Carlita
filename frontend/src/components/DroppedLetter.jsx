@@ -4,7 +4,7 @@ export default function DroppedLetter({ x }) {
   return (
     <div
       className="absolute animate-fall"
-      style={{ left: x, bottom: 122, transform: 'translateX(-50%)', zIndex: 12 }}
+      style={{ left: x, bottom: 110, transform: 'translateX(-50%)', zIndex: 12 }}
     >
       <div className="animate-idle-bob" style={{ filter: 'drop-shadow(0 0 8px #FFF3C4)' }}>
         <div style={{
