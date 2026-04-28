@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls /c/Users/admin/Desktop/Programming/Carlita/sprites/\"Growtopia FanKit\"/Sounds/SFX/)",
+      "Read(//tmp/**)",
+      "Bash(set -e)",
+      "Bash(npm install *)",
+      "PowerShell(Get-Command node, npm, pnpm, yarn, bun -ErrorAction SilentlyContinue)"
+    ]
+  }
+}

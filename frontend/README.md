@@ -1,16 +1,39 @@
-# React + Vite
+# Carlita & Cristian — One Year ♥
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A tiny Growtopia-inspired anniversary mini-game built with React + Vite + Tailwind.
 
-Currently, two official plugins are available:
+## Run it
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## React Compiler
+Open the URL Vite prints (default `http://localhost:5173`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## What to customize
 
-## Expanding the ESLint configuration
+- **Photo at the end** — drop a JPG at `frontend/public/us.jpg`. Until then the modal shows a placeholder card.
+- **Letter text** — edit the lines in `frontend/src/letter.js`.
+- **Background music / SFX** — files live in `frontend/public/sounds/`.
+- **Avatars** — `frontend/public/sprites/carlita.png` and `cristian.png`.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Controls
+
+- **← →** (or **A / D**) — walk
+- **E** — plant seed (only works next to the tree, while you still have the seed)
+- **SPACE** — punch (only works next to the letter tree)
+
+## Flow
+
+1. Title screen with the **Growtopia** logo and a **PLAY** button. Music starts on click (browsers block autoplay).
+2. Carlita spawns on the left holding a seed; Cristian stands on the right; a tree sits between them.
+3. Walk to the tree → press **E** → seed is planted, tree turns into a glowing **letter tree**.
+4. Press **SPACE** → tree gets punched, a letter falls.
+5. Walk over the letter → fireworks → letter modal opens, lines fade in one by one, photo appears at the end.
+6. **Bonus:** if Carlita walks onto Cristian, he says **"Te iubesc ♥"**.
+
+## Asset credits
+
+Sprites, font, and sounds: Ubisoft / Growtopia Fan Kit (assets were copied into `public/` from the `sprites/Growtopia FanKit/` folder).
