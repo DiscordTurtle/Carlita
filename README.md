@@ -9,7 +9,7 @@ TODO:
 [ ] Modify the Growtopia logo in photoshop so it splits down the middle beautifully, avoiding the tree, maybe making the tree fall when the screen splits
 [ ] Fix split animation
 [ ] Cut sound effects from the downlaoded mp3 and set them, such as: Punch effect, tree breaking effect, (...)
-
+[ ] cut grass aspect and replace the green line
 
 COLORS:
 punch_menu_background = #223a42

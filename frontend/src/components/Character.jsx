@@ -34,14 +34,14 @@ export default function Character({
          Nudged left so the icon+name pair visually centers above the head
          (the icon adds width on the left side of the name). */}
       <div
-        className="mb-1 flex items-center gap-2 text-xl"
+        className="mb-1 flex items-center gap-2 text-xl whitespace-nowrap"
         style={{ transform: 'translateX(-18px)' }}
       >
         <img
           src="/sprites/leg-title.webp"
           alt=""
           draggable={false}
-          className="pixel"
+          className="pixel legend-orb"
           style={{ width: 32, height: 32, imageRendering: 'pixelated' }}
         />
         <span className="legend-name">{name}</span>

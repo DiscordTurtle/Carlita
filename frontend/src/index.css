@@ -147,10 +147,10 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
 .logo-grow-go { animation: logoGrowGo 1.1s cubic-bezier(.65,.05,.25,1) forwards; }
 .logo-opia-go { animation: logoOpiaGo 1.1s cubic-bezier(.65,.05,.25,1) forwards; }
 
-/* Tree: rapid free-fall straight down with a slight tumble for weight. */
+/* Tree: rapid free-fall, rotating smoothly to 30deg by the time it leaves. */
 @keyframes logoTreeFall {
   0%   { transform: translateY(0)     rotate(0deg); }
-  100% { transform: translateY(120vh) rotate(18deg); }
+  100% { transform: translateY(120vh) rotate(30deg); }
 }
 .logo-tree-fall {
   animation: logoTreeFall 0.85s cubic-bezier(.45,.0,.85,.55) forwards;
@@ -170,6 +170,17 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
 }
 .logo-leaf-fall {
   animation: logoLeafFall 3.2s cubic-bezier(.4,.0,.7,1) forwards;
+}
+
+/* "Legend" orb — pulses bigger and back continuously. */
+@keyframes legendOrbPulse {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.25); }
+}
+.legend-orb {
+  animation: legendOrbPulse 3.6s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform;
 }
 
 /* "Legend"-style nametag — title text cycles through the rainbow. */

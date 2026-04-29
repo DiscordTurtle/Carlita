@@ -2,20 +2,24 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { playSfx } from '../useAudio.js'
 
 // Composite logo dimensions (px). Tuned so "Grow" and "opia" sit on either
-// side of the tree trunk like the original Growtopia logo.
+// side of the tree trunk like the original Growtopia logo. Each PNG has
+// transparent padding around its glyphs — `growLeft` shifts grow.png right
+// so its visible "w" tucks against the tree's left foliage instead of
+// leaving a visible gap before the tree.
 const LOGO = {
   width:    640,
   height:   260,
-  growW:    300,   // grow.png rendered width
-  opiaW:    240,   // opia.png rendered width
-  treeW:    340,   // tree.png rendered width
-  leafW:    72,    // leaf.png rendered width
-  growLeft: 0,
-  opiaRight:0,
-  treeLeft: 150,   // x of tree.png (centered behind the seam)
-  treeTop:  -10,   // y of tree.png — foliage rises above the text
-  leafLeft: 360,   // leaf perches on top of "opia"'s first o
-  leafTop:  76
+  growW:    300,
+  opiaW:    240,
+  treeW:    340,
+  leafW:    72,
+  growLeft: 20,    // shifted right so "w" meets the tree's foliage
+  opiaRight:65,
+  opiaTop:  88,
+  treeLeft: 85,
+  treeTop:  20,
+  leafLeft: 363,
+  leafTop:  94
 }
 
 export default function TitleScreen({ onPlay, splitting }) {
@@ -177,7 +181,7 @@ export default function TitleScreen({ onPlay, splitting }) {
             className={`absolute pixel ${going ? 'logo-opia-go' : ''}`}
             style={{
               right:  LOGO.opiaRight,
-              top:    60,
+              top:    LOGO.opiaTop,
               width:  LOGO.opiaW,
               zIndex: 2,
               filter: 'drop-shadow(0 4px 0 rgba(0,0,0,.25))'

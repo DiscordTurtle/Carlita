@@ -211,6 +211,9 @@ export default function GameScene() {
   function nearTree() {
     return Math.abs(xRef.current - layoutRef.current.treeX) < 110
   }
+  function nearCristian() {
+    return Math.abs(xRef.current - layoutRef.current.cristianX) < 90
+  }
 
   // ---------- Click to act ----------
   function handleWorldClick() {
@@ -242,7 +245,19 @@ export default function GameScene() {
     // play swing animation regardless, but only progress if conditions met
     setPunchSwing(true)
     setTimeout(() => setPunchSwing(false), 220)
-    playSfx('/sounds/punch.wav', { volume: 0.8 })
+
+    // Pick the punch SFX based on what (if anything) Carlita is hitting:
+    //   - Cristian within range          → punch-hit
+    //   - the Love Letter tree (STAGE.PUNCH) → tree-harvest (the "break" sfx)
+    //   - anything else (incl. the Wishing Tree, which shouldn't break)
+    //                                    → punch-miss
+    if (nearCristian()) {
+      playSfx('/sounds/punch-hit.wav', { volume: 0.8 })
+    } else if (nearTree() && stageRef.current === STAGE.PUNCH) {
+      playSfx('/sounds/tree-harvest.wav', { volume: 0.8 })
+    } else {
+      playSfx('/sounds/punch-miss.wav', { volume: 0.8 })
+    }
 
     if (stageRef.current === STAGE.PUNCH && nearTree()) {
       setStage(STAGE.COLLECT_LETTER)
@@ -350,7 +365,7 @@ export default function GameScene() {
         {/* Cristian (right, facing left, idle) */}
         <Character
           src="/sprites/cristian.png"
-          name="Cristian"
+          name="Cristian of Legend"
 x={layout.cristianX}
           facing="left"
           walking={false}
@@ -359,7 +374,7 @@ x={layout.cristianX}
         {/* Carlita (controlled, can jump) */}
         <Character
           src="/sprites/carlita.png"
-          name="Carlita"
+          name="Carlita of Legend"
 x={carlitaX}
           y={carlitaY}
           facing={facing}
