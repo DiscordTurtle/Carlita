@@ -1,23 +1,14 @@
 
 TODO:
-[x] move name + leg_title more to the left.
-[x] replace tree sprite with tree sprites
-[x] replace seed with seed sprite
 [ ] replace character models to better ones, make them equal height
 [ ] fix cristian's character speech bubble to be growtopia looking
 [ ] add growtopia firework effects + sound + achievement on top right when picking up letter
-[x] Replace letter with letter sprite.
-[ ] Add "love letter tree" when walking over the letter tree
-[x] Modify punch menu aspect with colors
-[x] Modify punch icon with punch sprite
-[ ] Fix screen split opening, add curtains to left and right
-[ ] Fix
-[x] Make rgb fluctuations happen slower in character name
-[ ] When tree is broken, it should play a break animation, sound, and make the tree sprite dissapear
+[ ] add curtains to left and right
 [ ] When letter is picked up, Cristian character should jump up and down 3 times.
 [ ] Maybe punch animation
 [ ] Modify the Growtopia logo in photoshop so it splits down the middle beautifully, avoiding the tree, maybe making the tree fall when the screen splits
-
+[ ] Fix split animation
+[ ] Cut sound effects from the downlaoded mp3 and set them, such as: Punch effect, tree breaking effect, (...)
 
 
 COLORS:

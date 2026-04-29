@@ -5,7 +5,8 @@
       "Read(//tmp/**)",
       "Bash(set -e)",
       "Bash(npm install *)",
-      "PowerShell(Get-Command node, npm, pnpm, yarn, bun -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-Command node, npm, pnpm, yarn, bun -ErrorAction SilentlyContinue)",
+      "Bash(npm run *)"
     ]
   }
 }

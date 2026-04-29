@@ -2,7 +2,10 @@ import React, { useEffect, useRef, useState } from 'react'
 import TitleScreen from './components/TitleScreen.jsx'
 import GameScene from './components/GameScene.jsx'
 
-const SPLIT_DURATION_MS = 1100  // matches .split-half transition in index.css
+// Long enough for the leaf to finish its slow swaying fall (~3.2s); the
+// background panels and "grow"/"opia" finish much sooner (~1.1s) but the
+// leaf is the last piece on screen.
+const SPLIT_DURATION_MS = 3300
 
 export default function App() {
   const [splitting, setSplitting] = useState(false)  // split transition in progress

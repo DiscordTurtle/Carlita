@@ -1,6 +1,23 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { playSfx } from '../useAudio.js'
 
+// Composite logo dimensions (px). Tuned so "Grow" and "opia" sit on either
+// side of the tree trunk like the original Growtopia logo.
+const LOGO = {
+  width:    640,
+  height:   260,
+  growW:    300,   // grow.png rendered width
+  opiaW:    240,   // opia.png rendered width
+  treeW:    340,   // tree.png rendered width
+  leafW:    72,    // leaf.png rendered width
+  growLeft: 0,
+  opiaRight:0,
+  treeLeft: 150,   // x of tree.png (centered behind the seam)
+  treeTop:  -10,   // y of tree.png — foliage rises above the text
+  leafLeft: 360,   // leaf perches on top of "opia"'s first o
+  leafTop:  76
+}
+
 export default function TitleScreen({ onPlay, splitting }) {
   const [playHover, setPlayHover] = useState(false)
   const [hasHovered, setHasHovered] = useState(false)
@@ -24,11 +41,9 @@ export default function TitleScreen({ onPlay, splitting }) {
     const count = 14
     return Array.from({ length: count }).map((_, i) => {
       const topPct    = 4 + (i * 11 + (i % 2) * 5) % 80
-      const duration  = 22 + ((i * 19) % 73)              // 22s … 95s
+      const duration  = 22 + ((i * 19) % 73)
       const direction = i % 2 === 0 ? 'normal' : 'reverse'
       const delay     = -(duration * ((i * 17) % 100) / 100)
-      // Used by the hover-scatter; pick a flight side based on parity since
-      // we no longer have a fixed initial leftPct.
       const flyX = (i % 2 === 0 ? 1 : -1) * (60 + (i * 7) % 40)
       const flyY = (topPct < 50 ? -1 : 1) * (30 + (i * 5) % 25)
       return {
@@ -40,22 +55,37 @@ export default function TitleScreen({ onPlay, splitting }) {
     })
   }, [])
 
-  // The full visual content of the title screen (background + sun + clouds + UI).
-  // Rendered once normally, OR rendered TWICE inside clipped halves during
-  // the split transition so each half can slide off in its own direction
-  // while staying perfectly aligned with the other.
-  const renderContent = ({ interactive }) => (
-    <>
-      {/* Background gradient */}
+  return (
+    <div
+      className="absolute inset-0 z-[100] overflow-hidden"
+      style={{ pointerEvents: splitting ? 'none' : 'auto' }}
+    >
+      {/* === Background gradient, split into two halves ===
+         Each half is exactly 50vw wide and slides its own width off-screen
+         when the split fires. Because each half is a self-contained block of
+         the SAME gradient, they look like one seamless background until they
+         move, and they move purely under their own width. */}
       <div
-        className="absolute inset-0"
+        className={`absolute top-0 left-0 h-full w-1/2 split-bg-half ${going ? 'split-bg-go-left' : ''}`}
         style={{
-          background: `radial-gradient(circle at 50% 30%, #FFF3C4 0%, #F7C948 40%, #DE911D 100%)`
+          background: 'radial-gradient(circle at 100% 30%, #FFF3C4 0%, #F7C948 40%, #DE911D 120%)'
+        }}
+      />
+      <div
+        className={`absolute top-0 right-0 h-full w-1/2 split-bg-half ${going ? 'split-bg-go-right' : ''}`}
+        style={{
+          background: 'radial-gradient(circle at 0% 30%, #FFF3C4 0%, #F7C948 40%, #DE911D 120%)'
         }}
       />
 
-      {/* Sun */}
-      <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[1] pointer-events-none">
+      {/* === Sun === */}
+      <div
+        className="absolute top-10 left-1/2 -translate-x-1/2 z-[3] pointer-events-none"
+        style={{
+          opacity: splitting ? 0 : 1,
+          transition: 'opacity 0.35s ease'
+        }}
+      >
         <div
           className={
             playHover ? 'sun-spiral-out'
@@ -68,16 +98,16 @@ export default function TitleScreen({ onPlay, splitting }) {
         </div>
       </div>
 
-      {/* Clouds — continuous L/R drift at varied speeds */}
+      {/* === Clouds === */}
       {clouds.map(c => (
         <div
           key={c.id}
-          className="absolute pointer-events-none"
+          className="absolute pointer-events-none z-[2]"
           style={{
-            top: `${c.topPct}%`, left: 0, zIndex: 0,
+            top: `${c.topPct}%`, left: 0,
             transform: playHover ? `translate(${c.flyX}vw, ${c.flyY}vh)` : 'translate(0, 0)',
             transition: 'transform 0.9s cubic-bezier(.22,1,.36,1), opacity 0.6s ease',
-            opacity: playHover ? 0 : 1
+            opacity: splitting ? 0 : (playHover ? 0 : 1)
           }}
         >
           <img
@@ -94,16 +124,90 @@ export default function TitleScreen({ onPlay, splitting }) {
         </div>
       ))}
 
-      {/* Foreground UI — forced to exactly 100vw so the centering of the
-         logo/text/button lands on viewport center, not on whatever width the
-         absolutely-positioned parent decided to be. */}
+      {/* === Foreground: composite logo + text + button === */}
       <div
-        className="relative z-[2] h-full flex flex-col items-center justify-center gap-8 px-4"
+        className="relative z-[4] h-full flex flex-col items-center justify-center gap-8 px-4"
         style={{ width: '100vw' }}
       >
-        <img src="/sprites/logo.png" className="pixel max-w-[640px] w-[80vw] drop-shadow-2xl" alt="Growtopia" />
+        {/* Composite logo: grow.png + tree.png + opia.png + Leaf.png
+            Each piece is absolutely positioned inside a relative box so we
+            can animate them independently during the split. */}
+        <div
+          className="relative"
+          style={{
+            width:  Math.min(LOGO.width, 0.8 * (typeof window !== 'undefined' ? window.innerWidth : 1280)),
+            height: LOGO.height
+          }}
+        >
+          {/* Tree (behind the letters) — falls straight down rapidly on split */}
+          <img
+            src="/sprites/logo-tree.png"
+            alt=""
+            draggable={false}
+            className={`absolute pixel ${going ? 'logo-tree-fall' : ''}`}
+            style={{
+              left: LOGO.treeLeft,
+              top:  LOGO.treeTop,
+              width: LOGO.treeW,
+              zIndex: 1,
+              filter: 'drop-shadow(0 6px 0 rgba(0,0,0,.25))'
+            }}
+          />
 
-        <div className="text-center">
+          {/* Grow (left letters) — flies off with the LEFT half */}
+          <img
+            src="/sprites/grow.png"
+            alt="Grow"
+            draggable={false}
+            className={`absolute pixel ${going ? 'logo-grow-go' : ''}`}
+            style={{
+              left:   LOGO.growLeft,
+              top:    40,
+              width:  LOGO.growW,
+              zIndex: 2,
+              filter: 'drop-shadow(0 4px 0 rgba(0,0,0,.25))'
+            }}
+          />
+
+          {/* Opia (right letters) — flies off with the RIGHT half */}
+          <img
+            src="/sprites/opia.png"
+            alt="opia"
+            draggable={false}
+            className={`absolute pixel ${going ? 'logo-opia-go' : ''}`}
+            style={{
+              right:  LOGO.opiaRight,
+              top:    60,
+              width:  LOGO.opiaW,
+              zIndex: 2,
+              filter: 'drop-shadow(0 4px 0 rgba(0,0,0,.25))'
+            }}
+          />
+
+          {/* Leaf — slowly drifts down with a swaying motion */}
+          <img
+            src="/sprites/logo-leaf.png"
+            alt=""
+            draggable={false}
+            className={`absolute pixel ${going ? 'logo-leaf-fall' : ''}`}
+            style={{
+              left:  LOGO.leafLeft,
+              top:   LOGO.leafTop,
+              width: LOGO.leafW,
+              zIndex: 3,
+              filter: 'drop-shadow(0 2px 0 rgba(0,0,0,.25))'
+            }}
+          />
+        </div>
+
+        {/* Title text — fades out on split */}
+        <div
+          className="text-center"
+          style={{
+            opacity: splitting ? 0 : 1,
+            transition: 'opacity 0.35s ease'
+          }}
+        >
           <div className="text-4xl md:text-5xl font-black gt-stroke text-[#FFF3C4]">
             Carlita &amp; Cristian
           </div>
@@ -112,42 +216,22 @@ export default function TitleScreen({ onPlay, splitting }) {
           </div>
         </div>
 
+        {/* PLAY button — fades out on split */}
         <button
           className="gt-btn text-3xl md:text-4xl font-black px-12 py-4 rounded-2xl tracking-widest"
           onMouseEnter={() => { setPlayHover(true); setHasHovered(true) }}
           onMouseLeave={() => setPlayHover(false)}
           onFocus={() => { setPlayHover(true); setHasHovered(true) }}
           onBlur={() => setPlayHover(false)}
-          onClick={() => { if (!interactive) return; playSfx('/sounds/click.wav', { volume: 0.6 }); onPlay() }}
-          // The clipped-half copies are non-interactive; only the single
-          // render path before splitting handles the click.
-          style={{ pointerEvents: interactive ? 'auto' : 'none' }}
+          onClick={() => { if (splitting) return; playSfx('/sounds/click.wav', { volume: 0.6 }); onPlay() }}
+          style={{
+            opacity: splitting ? 0 : 1,
+            transition: 'opacity 0.35s ease',
+            pointerEvents: splitting ? 'none' : 'auto'
+          }}
         >
           ▶ PLAY
         </button>
-      </div>
-    </>
-  )
-
-  // Normal render — single full-screen layer
-  if (!splitting) {
-    return (
-      <div className="absolute inset-0 z-[100] overflow-hidden">
-        {renderContent({ interactive: true })}
-      </div>
-    )
-  }
-
-  // Split render — two clipped copies that slide apart, revealing the
-  // GameScene behind. The inner content is identical in both halves and
-  // perfectly aligned, so before the slide they look like one unbroken image.
-  return (
-    <div className="absolute inset-0 z-[100] overflow-hidden pointer-events-none">
-      <div className={`split-half split-left ${going ? 'split-go-left' : ''}`}>
-        {renderContent({ interactive: false })}
-      </div>
-      <div className={`split-half split-right ${going ? 'split-go-right' : ''}`}>
-        {renderContent({ interactive: false })}
       </div>
     </div>
   )
