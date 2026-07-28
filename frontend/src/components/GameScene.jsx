@@ -325,7 +325,7 @@ export default function GameScene() {
       <img src="/sprites/sun.png" alt=""
            draggable={false}
            className="absolute pixel animate-sun-glow"
-           style={{ top: 24, right: 36, width: 300, zIndex: 1 }} />
+           style={{ top: 24, right: 36, width: 200, zIndex: 1 }} />
 
       {/* Drifting clouds — in front of the sun, flying continuously L/R at varied speeds */}
       {clouds.map(c => (
