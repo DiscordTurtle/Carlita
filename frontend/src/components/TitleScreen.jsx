@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import Rays from './Rays'
 import { playSfx } from '../useAudio.js'
 
 // Composite logo dimensions (px). Tuned so "Grow" and "opia" sit on either
@@ -82,7 +83,7 @@ export default function TitleScreen({ onPlay, splitting }) {
         }}
       />
 
-      {/* === Sun === */}
+      {/* === Sun + Rays === */}
       <div
         className="absolute top-10 left-1/2 -translate-x-1/2 z-[3] pointer-events-none"
         style={{
@@ -90,6 +91,9 @@ export default function TitleScreen({ onPlay, splitting }) {
           transition: 'opacity 0.35s ease'
         }}
       >
+        {/* Rays positioned around the sun center. `style` aligns the rays' fixed container */}
+        <Rays playShoot={playHover} splitting={splitting} style={{}} />
+
         <div
           className={
             playHover ? 'sun-spiral-out'
