@@ -7,7 +7,7 @@ import React from 'react'
 export default function Character({
   src, name, x, y = 0,
   facing = 'right', walking = false, punching = false,
-  scale = 1, holding = null
+  scale = 1, holding = null, punchOffset = 0
 }) {
   const flip = facing === 'left' ? -1 : 1
   const height = 110 * scale
@@ -15,6 +15,10 @@ export default function Character({
   const swingStyle = punching
     ? { transform: `rotate(${flip < 0 ? 14 : -14}deg)`, transition: 'transform .1s' }
     : { transform: 'rotate(0deg)', transition: 'transform .15s' }
+
+  const positionStyle = {
+    transform: `translate(-50%, ${-y}px)${punchOffset ? ` translateX(${punchOffset}px)` : ''}`
+  }
 
   return (
     <div
@@ -25,7 +29,7 @@ export default function Character({
         // avatar's transparent foot-padding overlaps the grass and the feet
         // visibly land on it.
         bottom: 108,
-        transform: `translate(-50%, ${-y}px)`,
+        ...positionStyle,
         zIndex: 20,
         transition: 'transform 0s'
       }}

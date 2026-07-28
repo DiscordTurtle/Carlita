@@ -7,7 +7,8 @@ import Fireworks from './Fireworks.jsx'
 import SpeechBubble from './SpeechBubble.jsx'
 import LetterModal from './LetterModal.jsx'
 import ActionMenu from './ActionMenu.jsx'
-import { playSfx } from '../useAudio.js'
+import GameMenu from './GameMenu.jsx'
+import { playSfx, setMasterVolume as setAudioMasterVolume } from '../useAudio.js'
 
 const WORLD = {
   groundY:   120,
@@ -87,8 +88,11 @@ export default function GameScene() {
   const [showFireworks,   setShowFireworks]   = useState(false)
   const [showLove,        setShowLove]        = useState(false)
   const [punchSwing,      setPunchSwing]      = useState(false)
+  const [punchOffset,     setPunchOffset]     = useState(0)
+  const [masterVolume,    setMasterVolume]    = useState(1)
   const [selectedSlot,    setSelectedSlot]    = useState('seed')
   const [showTreeName,    setShowTreeName]    = useState(false)
+  const [menuOpen,        setMenuOpen]        = useState(false)
 
   // refs for game loop
   const keys       = useRef({ left: false, right: false })
@@ -100,11 +104,13 @@ export default function GameScene() {
   const slotRef    = useRef(selectedSlot)
   const lastStep   = useRef(0)
   const layoutRef  = useRef(layout)
+  const punchRaf   = useRef(null)
 
   useEffect(() => { stageRef.current  = stage }, [stage])
   useEffect(() => { seedRef.current   = hasSeed }, [hasSeed])
   useEffect(() => { slotRef.current   = selectedSlot }, [selectedSlot])
   useEffect(() => { layoutRef.current = layout }, [layout])
+  useEffect(() => { setAudioMasterVolume(masterVolume) }, [masterVolume])
 
   // Resize handler — recompute layout (and clamp Carlita) on viewport changes.
   useEffect(() => {
@@ -118,6 +124,20 @@ export default function GameScene() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // ESC to open menu (only when menu is closed)
+  useEffect(() => {
+    if (menuOpen) return
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setMenuOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [menuOpen])
 
   // Drop selection back to "punch" when whatever is selected goes away.
   useEffect(() => {
@@ -241,10 +261,47 @@ export default function GameScene() {
     playSfx('/sounds/tree-splice.mp3', { volume: 0.8 })
   }
 
+  function animatePunchOffset(targetX) {
+    if (punchRaf.current) cancelAnimationFrame(punchRaf.current)
+
+    const startX = xRef.current
+    const distance = Math.min(70, Math.abs(targetX - startX))
+    const direction = targetX >= startX ? 1 : -1
+    const startTime = performance.now()
+    const duration = 220
+
+    const tick = (now) => {
+      const progress = Math.min((now - startTime) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      const offset = direction * Math.round(distance * eased)
+      setPunchOffset(offset)
+
+      if (progress < 1) {
+        punchRaf.current = requestAnimationFrame(tick)
+      } else {
+        setPunchOffset(0)
+        punchRaf.current = null
+      }
+    }
+
+    punchRaf.current = requestAnimationFrame(tick)
+  }
+
   function tryPunch() {
+    const targetX = nearCristian()
+      ? layoutRef.current.cristianX
+      : (nearTree() && stageRef.current === STAGE.PUNCH ? layoutRef.current.treeX : null)
+
     // play swing animation regardless, but only progress if conditions met
     setPunchSwing(true)
     setTimeout(() => setPunchSwing(false), 220)
+
+    if (targetX !== null) {
+      setFacing(targetX < xRef.current ? 'left' : 'right')
+      animatePunchOffset(targetX)
+    } else {
+      setPunchOffset(0)
+    }
 
     // Pick the punch SFX based on what (if anything) Carlita is hitting:
     //   - Cristian within range          → punch-hit
@@ -346,6 +403,70 @@ export default function GameScene() {
         />
       ))}
 
+      {/* Menu button — top right corner */}
+      <button
+        onClick={() => setMenuOpen(true)}
+        className="fixed top-4 right-4 z-40 transition-all hover:scale-110 active:scale-95"
+        style={{
+          width: 36,
+          height: 32,
+          background: '#e8f4f8',
+          border: '2px solid #7cc4e8',
+          borderRadius: '3px',
+          cursor: 'pointer',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          padding: 0,
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start',
+          overflow: 'hidden',
+          position: 'fixed'
+        }}
+        title="Menu (ESC)"
+      >
+        {/* Folded corner effect */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: 0,
+          height: 0,
+          borderLeft: '8px solid transparent',
+          borderTop: '8px solid #d0e8f2',
+          borderRight: '0px solid transparent',
+          borderBottom: '0px solid transparent'
+        }} />
+        
+        {/* Three horizontal lines */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          gap: '3px',
+          padding: '2px 1px 0px 1px',
+          width: '100%',
+          height: '100%'
+        }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} style={{ display: 'flex', gap: '2px', alignItems: 'center' }}>
+              <div style={{
+                width: '4px',
+                height: '2px',
+                background: '#5fa8d3',
+                borderRadius: '0.5px',
+                flexShrink: 0
+              }} />
+              <div style={{
+                width: '20px',
+                height: '2px',
+                background: '#5fa8d3',
+                borderRadius: '0.5px'
+              }} />
+            </div>
+          ))}
+        </div>
+      </button>
+
       {/* World */}
       <div className="absolute inset-0">
         {/* ground strip */}
@@ -380,6 +501,7 @@ x={carlitaX}
           facing={facing}
           walking={walking}
           punching={punchSwing && slotRef.current === 'punch'}
+          punchOffset={punchOffset}
           holding={hasSeed && selectedSlot === 'seed' ? <Seed size={26} /> : null}
         />
 
@@ -402,6 +524,14 @@ x={carlitaX}
       {showLetterModal && (
         <LetterModal onClose={() => { setShowFireworks(false); setShowLetterModal(false) }} />
       )}
+
+      {/* Menu */}
+      <GameMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        masterVolume={masterVolume}
+        setMasterVolume={setMasterVolume}
+      />
     </div>
   )
 }

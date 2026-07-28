@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import TitleScreen from './components/TitleScreen.jsx'
 import GameScene from './components/GameScene.jsx'
+import { getMasterVolume, subscribeToMasterVolume } from './useAudio.js'
 
 // Long enough for the leaf to finish its slow swaying fall (~3.2s); the
 // background panels and "grow"/"opia" finish much sooner (~1.1s) but the
@@ -15,10 +16,21 @@ export default function App() {
   useEffect(() => {
     const a = new Audio('/sounds/about_theme.mp3')
     a.loop = true
-    a.volume = 0.35
+    a.volume = 0.35 * getMasterVolume()
     audioRef.current = a
     a.play().catch(() => {})
-    return () => { a.pause(); a.src = '' }
+
+    const updateVolume = () => {
+      if (a) a.volume = 0.35 * getMasterVolume()
+    }
+    updateVolume()
+    const unsubscribe = subscribeToMasterVolume(updateVolume)
+
+    return () => {
+      unsubscribe()
+      a.pause()
+      a.src = ''
+    }
   }, [])
 
   function handlePlay() {
@@ -29,7 +41,7 @@ export default function App() {
       a.pause()
       a.src = '/sounds/theme.mp3'
       a.loop = true
-      a.volume = 0.35
+      a.volume = 0.35 * getMasterVolume()
       a.play().catch(() => {})
     }
     // Mount GameScene behind, then start the split slide.
