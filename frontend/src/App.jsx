@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import TitleScreen from './components/TitleScreen.jsx'
 import GameScene from './components/GameScene.jsx'
+import WorldSelector from './components/WorldSelector.jsx'
+import GridWorld from './components/GridWorld.jsx'
+import { PARKOUR_MAP, SPAWN } from './maps/parkourMap.js'
 import { getMasterVolume, subscribeToMasterVolume } from './useAudio.js'
 
-// Long enough for the leaf to finish its slow swaying fall (~3.2s); the
-// background panels and "grow"/"opia" finish much sooner (~1.1s) but the
-// leaf is the last piece on screen.
+// Screens: 'title' → 'worldselect' → 'parkour' → 'game'
 const SPLIT_DURATION_MS = 3300
 
 export default function App() {
-  const [splitting, setSplitting] = useState(false)  // split transition in progress
-  const [started,   setStarted]   = useState(false)  // game scene fully revealed
+  const [screen,   setScreen]   = useState('title')
+  const [splitting, setSplitting] = useState(false)
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -20,22 +21,14 @@ export default function App() {
     audioRef.current = a
     a.play().catch(() => {})
 
-    const updateVolume = () => {
-      if (a) a.volume = 0.35 * getMasterVolume()
-    }
+    const updateVolume = () => { if (a) a.volume = 0.35 * getMasterVolume() }
     updateVolume()
     const unsubscribe = subscribeToMasterVolume(updateVolume)
-
-    return () => {
-      unsubscribe()
-      a.pause()
-      a.src = ''
-    }
+    return () => { unsubscribe(); a.pause(); a.src = '' }
   }, [])
 
   function handlePlay() {
-    if (splitting || started) return
-    // Music swap on the same gesture so browsers allow it.
+    if (splitting || screen !== 'title') return
     const a = audioRef.current
     if (a) {
       a.pause()
@@ -44,26 +37,23 @@ export default function App() {
       a.volume = 0.35 * getMasterVolume()
       a.play().catch(() => {})
     }
-    // Mount GameScene behind, then start the split slide.
+    setScreen('worldselect')   // mount behind the split so it's revealed, not swapped in
     setSplitting(true)
-    // Once the slide finishes, drop the title screen entirely.
-    setTimeout(() => setStarted(true), SPLIT_DURATION_MS)
+    setTimeout(() => setSplitting(false), SPLIT_DURATION_MS)
   }
 
   function handleFirstInteraction() {
     const a = audioRef.current
-    if (a && a.paused && !started && !splitting) a.play().catch(() => {})
+    if (a && a.paused && screen === 'title' && !splitting) a.play().catch(() => {})
   }
 
-  // GameScene mounts as soon as the split begins so the slide reveals it
-  // gradually instead of swapping in only at the end.
-  const gameMounted = started || splitting
-  // Title stays mounted until the split fully completes.
-  const titleVisible = !started
+  const titleVisible = screen === 'title' || splitting  // stays up during split regardless of screen
 
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
-      {gameMounted  && <GameScene />}
+      {screen === 'game'        && <GameScene />}
+      {screen === 'parkour'     && <GridWorld map={PARKOUR_MAP} spawn={SPAWN} onComplete={() => setScreen('game')} />}
+      {screen === 'worldselect' && <WorldSelector onBack={() => setScreen('title')} onEnter={() => setScreen('parkour')} />}
       {titleVisible && <TitleScreen onPlay={handlePlay} splitting={splitting} />}
     </div>
   )

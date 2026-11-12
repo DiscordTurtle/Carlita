@@ -1,4 +1,9 @@
 
+SPRITES:
+frontend/public/sprites/blocks/all/ is gitignored (~8000 Growtopia item sprites).
+Re-download: for each ID, curl -s -o {name}.png "https://cdn.growtopiawiki.com/sprites/{id}.png"
+Name→ID mapping: https://raw.githubusercontent.com/BlackGhostGT/ItemsDat-Decoder/master/data.json (array index = item ID)
+
 TODO:
 [ ] replace character models to better ones, make them equal height
 [ ] fix cristian's character speech bubble to be growtopia looking
