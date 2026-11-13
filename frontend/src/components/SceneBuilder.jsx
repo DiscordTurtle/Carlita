@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { AUTOTILE, autotileCSS } from '../autotile.js'
+import { AUTOTILE, BG_BLOCKS, autotileCSS } from '../autotile.js'
 
 // Standalone scene builder using all Growtopia sprites.
 // Usage in main.jsx:
@@ -15,12 +15,34 @@ const DEFAULT_TILE = 32
 const MAX_SHOWN = 300
 const LS_KEY = 'sceneBuilder_scenes'
 
+const isBg = name => name ? BG_BLOCKS.has(name) : false
+
+// Grid cells are { fg: name|null, bg: name|null }
 function makeGrid(w, h) {
-  return Array.from({ length: h }, () => Array(w).fill(null))
+  return Array.from({ length: h }, () => Array.from({ length: w }, () => ({ fg: null, bg: null })))
+}
+
+function copyGrid(g) {
+  return g.map(row => row.map(cell => ({ ...cell })))
+}
+
+// Migrate old scenes saved as string|null per cell
+function migrateCell(cell) {
+  if (cell === null) return { fg: null, bg: null }
+  if (typeof cell === 'string') return isBg(cell) ? { fg: null, bg: cell } : { fg: cell, bg: null }
+  return cell
 }
 
 function loadScenes()   { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} } }
 function saveScenes(db) { localStorage.setItem(LS_KEY, JSON.stringify(db)) }
+
+function tileStyle(name, neighbors, displayPx) {
+  if (!name) return null
+  const atDef = AUTOTILE[name]
+  return atDef
+    ? autotileCSS(atDef, neighbors, displayPx)
+    : { background: `url(${BASE_URL + name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat` }
+}
 
 export default function SceneBuilder() {
   const [sprites,  setSprites]  = useState([])
@@ -37,21 +59,20 @@ export default function SceneBuilder() {
   const [tool,        setTool]       = useState('pencil')
   const [weather,     setWeather]    = useState('sunny')
   const [showGrid,    setShowGrid]   = useState(true)
-  const [rectPreview, setRectPreview] = useState(null)  // { r1,c1,r2,c2 } while rect-dragging
+  const [rectPreview, setRectPreview] = useState(null)
   const painting   = useRef(false)
   const erasing    = useRef(false)
   const scrollRef  = useRef(null)
-  const dragRef    = useRef(null)   // { x, y, sl, st } while hand-dragging
-  const rectStart  = useRef(null)   // { r, c } start cell for rect tool
-  const gridRef    = useRef(grid)   // kept in sync for stable undo callbacks
-  const historyRef = useRef([])     // undo stack (max 40 snapshots)
-  const redoRef    = useRef([])     // redo stack
+  const dragRef    = useRef(null)
+  const rectStart  = useRef(null)
+  const gridRef    = useRef(grid)
+  const historyRef = useRef([])
+  const redoRef    = useRef([])
   // Select-move tool
-  // selState: null | {phase:'selecting'|'selected'|'moving', r1,c1,r2,c2, dr?,dc?}
   const [selState,    setSelState]   = useState(null)
-  const selStart    = useRef(null)   // {r,c} where selection drag started
-  const selDragCell = useRef(null)   // {r,c} where move drag started
-  const selTiles    = useRef(null)   // snapshot of tiles before move
+  const selStart    = useRef(null)
+  const selDragCell = useRef(null)
+  const selTiles    = useRef(null)
 
   useEffect(() => {
     fetch(MANIFEST).then(r => r.json()).then(list => {
@@ -69,7 +90,6 @@ export default function SceneBuilder() {
     return () => document.removeEventListener('mousedown', close)
   }, [showLoad])
 
-  // Wheel zoom — must be non-passive to call preventDefault
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
@@ -82,13 +102,13 @@ export default function SceneBuilder() {
   })
 
   const pushHistory = useCallback(() => {
-    historyRef.current = [...historyRef.current.slice(-39), gridRef.current.map(r => [...r])]
+    historyRef.current = [...historyRef.current.slice(-39), copyGrid(gridRef.current)]
     redoRef.current = []
   }, [])
 
   const undo = useCallback(() => {
     if (!historyRef.current.length) return
-    redoRef.current = [gridRef.current.map(r => [...r]), ...redoRef.current.slice(0, 39)]
+    redoRef.current = [copyGrid(gridRef.current), ...redoRef.current.slice(0, 39)]
     const prev = historyRef.current[historyRef.current.length - 1]
     historyRef.current = historyRef.current.slice(0, -1)
     setGrid(prev)
@@ -98,7 +118,7 @@ export default function SceneBuilder() {
 
   const redo = useCallback(() => {
     if (!redoRef.current.length) return
-    historyRef.current = [...historyRef.current.slice(-39), gridRef.current.map(r => [...r])]
+    historyRef.current = [...historyRef.current.slice(-39), copyGrid(gridRef.current)]
     const next = redoRef.current[0]
     redoRef.current = redoRef.current.slice(1)
     setGrid(next)
@@ -122,11 +142,10 @@ export default function SceneBuilder() {
     ? sprites.filter(s => s.includes(search.trim().toLowerCase()))
     : sprites
 
-  // Resize grid, preserving existing tiles
   const resize = useCallback((w, h) => {
     pushHistory()
     setGrid(prev => Array.from({ length: h }, (_, r) =>
-      Array.from({ length: w }, (_, c) => prev[r]?.[c] ?? null)
+      Array.from({ length: w }, (_, c) => prev[r]?.[c] ? { ...prev[r][c] } : { fg: null, bg: null })
     ))
     setGridW(w)
     setGridH(h)
@@ -134,8 +153,14 @@ export default function SceneBuilder() {
 
   const paint = useCallback((r, c, erase) => {
     setGrid(prev => {
-      const next = prev.map(row => [...row])
-      if (next[r]?.[c] !== undefined) next[r][c] = erase ? null : selected
+      const next = copyGrid(prev)
+      if (next[r]?.[c] === undefined) return prev
+      if (erase) {
+        next[r][c] = { fg: null, bg: null }
+      } else {
+        const cell = next[r][c]
+        next[r][c] = isBg(selected) ? { ...cell, bg: selected } : { ...cell, fg: selected }
+      }
       return next
     })
   }, [selected])
@@ -144,19 +169,17 @@ export default function SceneBuilder() {
     if (tool === 'hand') return
     e.preventDefault()
     if (tool === 'select') {
-      // If clicking inside an existing selection → start move
       if (selState?.phase === 'selected') {
         const { r1, c1, r2, c2 } = selState
         if (r >= r1 && r <= r2 && c >= c1 && c <= c2) {
           selDragCell.current = { r, c }
           selTiles.current = Array.from({ length: r2-r1+1 }, (_, dr) =>
-            Array.from({ length: c2-c1+1 }, (_, dc) => gridRef.current[r1+dr]?.[c1+dc] ?? null)
+            Array.from({ length: c2-c1+1 }, (_, dc) => ({ ...gridRef.current[r1+dr]?.[c1+dc] ?? { fg: null, bg: null } }))
           )
           setSelState({ phase: 'moving', r1, c1, r2, c2, dr: 0, dc: 0 })
           return
         }
       }
-      // Start new selection
       selStart.current = { r, c }
       setSelState({ phase: 'selecting', r1: r, c1: c, r2: r, c2: c })
       return
@@ -172,6 +195,7 @@ export default function SceneBuilder() {
     erasing.current  = e.button === 2
     paint(r, c, erasing.current)
   }
+
   const onCellEnter = (r, c) => {
     setHover({ r, c })
     if (tool === 'select') {
@@ -192,6 +216,7 @@ export default function SceneBuilder() {
     }
     if (tool === 'pencil' && painting.current) paint(r, c, erasing.current)
   }
+
   const stopPainting = () => {
     if (tool === 'select') {
       if (selState?.phase === 'selecting') {
@@ -201,19 +226,19 @@ export default function SceneBuilder() {
         const { r1, c1, r2, c2, dr, dc } = selState
         pushHistory()
         setGrid(prev => {
-          const next = prev.map(row => [...row])
-          // Clear only source cells that had tiles
-          for (let dri = 0; dri <= r2-r1; dri++)
-            for (let dci = 0; dci <= c2-c1; dci++)
-              if (selTiles.current[dri][dci] !== null && next[r1+dri]?.[c1+dci] !== undefined)
-                next[r1+dri][c1+dci] = null
-          // Write non-null tiles to destination
+          const next = copyGrid(prev)
           for (let dri = 0; dri <= r2-r1; dri++)
             for (let dci = 0; dci <= c2-c1; dci++) {
               const tile = selTiles.current[dri][dci]
-              if (tile !== null) {
+              if ((tile.fg !== null || tile.bg !== null) && next[r1+dri]?.[c1+dci] !== undefined)
+                next[r1+dri][c1+dci] = { fg: null, bg: null }
+            }
+          for (let dri = 0; dri <= r2-r1; dri++)
+            for (let dci = 0; dci <= c2-c1; dci++) {
+              const tile = selTiles.current[dri][dci]
+              if (tile.fg !== null || tile.bg !== null) {
                 const nr = r1+dr+dri, nc = c1+dc+dci
-                if (next[nr]?.[nc] !== undefined) next[nr][nc] = tile
+                if (next[nr]?.[nc] !== undefined) next[nr][nc] = { ...tile }
               }
             }
           return next
@@ -227,10 +252,17 @@ export default function SceneBuilder() {
       const { r1, c1, r2, c2 } = rectPreview
       const erase = rectStart.current.erase
       setGrid(prev => {
-        const next = prev.map(row => [...row])
+        const next = copyGrid(prev)
         for (let r = r1; r <= r2; r++)
-          for (let c = c1; c <= c2; c++)
-            if (next[r]?.[c] !== undefined) next[r][c] = erase ? null : selected
+          for (let c = c1; c <= c2; c++) {
+            if (next[r]?.[c] === undefined) continue
+            if (erase) {
+              next[r][c] = { fg: null, bg: null }
+            } else {
+              const cell = next[r][c]
+              next[r][c] = isBg(selected) ? { ...cell, bg: selected } : { ...cell, fg: selected }
+            }
+          }
         return next
       })
     }
@@ -255,7 +287,6 @@ export default function SceneBuilder() {
     scrollRef.current.style.cursor = tool === 'hand' ? 'grab' : 'crosshair'
   }
 
-  // Save scene
   const saveScene = () => {
     const name = sceneName.trim()
     if (!name) return
@@ -264,17 +295,16 @@ export default function SceneBuilder() {
     saveScenes(db)
   }
 
-  // Load scene
   const loadScene = name => {
     const saved = scenes[name]
     if (!saved) return
-    setGrid(saved)
-    setGridH(saved.length)
-    setGridW(saved[0]?.length ?? DEFAULT_W)
+    const g = saved.map(row => row.map(migrateCell))
+    setGrid(g)
+    setGridH(g.length)
+    setGridW(g[0]?.length ?? DEFAULT_W)
     setShowLoad(false)
   }
 
-  // Delete scene
   const deleteScene = name => {
     const db = { ...scenes }
     delete db[name]
@@ -282,14 +312,12 @@ export default function SceneBuilder() {
     saveScenes(db)
   }
 
-  // Export JSON
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(grid)], { type: 'application/json' })
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'scene.json' })
     a.click()
   }
 
-  // Export PNG via offscreen canvas
   const exportPNG = async () => {
     const canvas = document.createElement('canvas')
     canvas.width  = gridW * tileSize
@@ -303,21 +331,18 @@ export default function SceneBuilder() {
       img.src = src
     })
 
-    // Draw weather background first
     const bgImg = await load(`/weather/${weather}.png`)
-    if (bgImg) {
-      ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height)
-    } else {
-      ctx.fillStyle = '#020809'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-    }
+    if (bgImg) ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height)
+    else { ctx.fillStyle = '#020809'; ctx.fillRect(0, 0, canvas.width, canvas.height) }
 
-    for (let r = 0; r < gridH; r++) {
-      for (let c = 0; c < gridW; c++) {
-        const name = grid[r][c]
-        if (!name) continue
-        const img = await load(BASE_URL + name)
-        if (img) ctx.drawImage(img, c * tileSize, r * tileSize, tileSize, tileSize)
+    for (const layer of ['bg', 'fg']) {
+      for (let r = 0; r < gridH; r++) {
+        for (let c = 0; c < gridW; c++) {
+          const name = grid[r][c]?.[layer]
+          if (!name) continue
+          const img = await load(BASE_URL + name)
+          if (img) ctx.drawImage(img, c * tileSize, r * tileSize, tileSize, tileSize)
+        }
       }
     }
 
@@ -456,13 +481,22 @@ export default function SceneBuilder() {
           </div>
           {selected && (() => {
             const atDef = AUTOTILE[selected]
+            const bg = isBg(selected)
             return (
               <div style={{ padding: '8px 10px', borderTop: '1px solid #333', display: 'flex', alignItems: 'center', gap: 8 }}>
                 {atDef
                   ? <div style={{ width: 48, height: 48, imageRendering: 'pixelated', flexShrink: 0, ...autotileCSS(atDef, {}, 48) }} />
                   : <img src={BASE_URL + selected} style={{ width: 48, height: 48, imageRendering: 'pixelated', background: 'repeating-conic-gradient(#2a2a3a 0% 25%, #1a1a2a 0% 50%) 0 0 / 8px 8px' }} />
                 }
-                <span style={{ wordBreak: 'break-word', color: '#ccc', fontSize: 11 }}>{selected.replace('.png', '')}</span>
+                <div>
+                  <div style={{ wordBreak: 'break-word', color: '#ccc', fontSize: 11 }}>{selected.replace('.png', '')}</div>
+                  <div style={{ marginTop: 3, fontSize: 10, fontWeight: 'bold',
+                    color: bg ? '#7af' : '#afa',
+                    background: bg ? '#112233' : '#113311',
+                    padding: '1px 5px', borderRadius: 2, display: 'inline-block' }}>
+                    {bg ? '▣ BG layer' : '▤ FG layer'}
+                  </div>
+                </div>
               </div>
             )
           })()}
@@ -479,50 +513,44 @@ export default function SceneBuilder() {
             onContextMenu={e => e.preventDefault()}
           >
             {grid.map((row, r) =>
-              row.map((name, c) => {
+              row.map((cell, c) => {
+                const { fg, bg } = cell
                 const isHover  = hover?.r === r && hover?.c === c
                 const inRect   = rectPreview && r >= rectPreview.r1 && r <= rectPreview.r2 && c >= rectPreview.c1 && c <= rectPreview.c2
-                const atDef    = name ? AUTOTILE[name] : null
-                const connects = (dr, dc) => name && grid[r + dr]?.[c + dc] === name
-                const G = showGrid ? '#2a2a3a' : 'transparent'
-                const T = '1px solid transparent'
 
                 // Selection tool visuals
                 const inSel = selState && r >= selState.r1 && r <= selState.r2 && c >= selState.c1 && c <= selState.c2
                 const isMovingSource = selState?.phase === 'moving' && inSel
-                let ghostTile = null
+                let ghostCell = null
                 if (selState?.phase === 'moving') {
                   const { r1, c1, dr, dc } = selState
                   const dri = r - (r1 + dr), dci = c - (c1 + dc)
                   if (dri >= 0 && dci >= 0 && dri <= selState.r2-r1 && dci <= selState.c2-c1)
-                    ghostTile = selTiles.current?.[dri]?.[dci] ?? null
+                    ghostCell = selTiles.current?.[dri]?.[dci] ?? null
                 }
 
-                const bgStyle = atDef ? autotileCSS(atDef, {
-                  n:  grid[r-1]?.[c]   === name,
-                  ne: grid[r-1]?.[c+1] === name,
-                  e:  grid[r]?.[c+1]   === name,
-                  se: grid[r+1]?.[c+1] === name,
-                  s:  grid[r+1]?.[c]   === name,
-                  sw: grid[r+1]?.[c-1] === name,
-                  w:  grid[r]?.[c-1]   === name,
-                  nw: grid[r-1]?.[c-1] === name,
-                }, tileSize) : {
-                  background: name ? `url(${BASE_URL + name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat` : 'transparent',
-                }
+                // Autotile neighbor helpers per layer
+                const fgN = fg ? {
+                  n:  grid[r-1]?.[c]?.fg   === fg, ne: grid[r-1]?.[c+1]?.fg === fg,
+                  e:  grid[r]?.[c+1]?.fg   === fg, se: grid[r+1]?.[c+1]?.fg === fg,
+                  s:  grid[r+1]?.[c]?.fg   === fg, sw: grid[r+1]?.[c-1]?.fg === fg,
+                  w:  grid[r]?.[c-1]?.fg   === fg, nw: grid[r-1]?.[c-1]?.fg === fg,
+                } : {}
+                const bgN = bg ? {
+                  n:  grid[r-1]?.[c]?.bg   === bg, ne: grid[r-1]?.[c+1]?.bg === bg,
+                  e:  grid[r]?.[c+1]?.bg   === bg, se: grid[r+1]?.[c+1]?.bg === bg,
+                  s:  grid[r+1]?.[c]?.bg   === bg, sw: grid[r+1]?.[c-1]?.bg === bg,
+                  w:  grid[r]?.[c-1]?.bg   === bg, nw: grid[r-1]?.[c-1]?.bg === bg,
+                } : {}
 
-                // Autotile cells: no CSS borders (border shifts background-origin by 1px inside
-                // border-box sizing, causing white strip at top). Grid lines only for non-autotile.
-                const borders = atDef ? { border: 'none' } : {
-                  borderTop:    connects(-1, 0) ? T : `1px solid ${G}`,
-                  borderRight:  connects( 0, 1) ? T : `1px solid ${G}`,
-                  borderBottom: connects( 1, 0) ? T : `1px solid ${G}`,
-                  borderLeft:   connects( 0,-1) ? T : `1px solid ${G}`,
-                }
+                const fgStyle = tileStyle(fg, fgN, tileSize)
+                const bgStyle = tileStyle(bg, bgN, tileSize)
 
                 const selOutline =
                   inSel && selState.phase !== 'moving' ? '2px solid #88aaff' :
-                  ghostTile !== null                   ? '2px solid #aaccff' : undefined
+                  ghostCell !== null                   ? '2px solid #aaccff' : undefined
+
+                const G = showGrid ? 'rgba(42,42,58,0.7)' : 'transparent'
 
                 return (
                   <div
@@ -536,17 +564,16 @@ export default function SceneBuilder() {
                       opacity: isMovingSource ? 0.25 : 1,
                       outline: inRect ? '2px solid #fa8' : selOutline ?? (isHover ? '2px solid #aef' : undefined),
                       outlineOffset: '-2px',
-                      ...borders,
-                      ...bgStyle,
+                      boxShadow: showGrid ? `inset 0 0 0 1px ${G}` : 'none',
                     }}
                   >
-                    {ghostTile && (
-                      <div style={{
-                        position: 'absolute', inset: 0, pointerEvents: 'none',
-                        ...(AUTOTILE[ghostTile]
-                          ? autotileCSS(AUTOTILE[ghostTile], {}, tileSize)
-                          : { background: `url(${BASE_URL + ghostTile}) center/calc(100% + 2px) calc(100% + 2px) no-repeat` }),
-                      }} />
+                    {bgStyle && <div style={{ position: 'absolute', inset: 0, ...bgStyle }} />}
+                    {fgStyle && <div style={{ position: 'absolute', inset: 0, ...fgStyle }} />}
+                    {ghostCell && (ghostCell.bg || ghostCell.fg) && (
+                      <>
+                        {ghostCell.bg && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', ...tileStyle(ghostCell.bg, {}, tileSize) }} />}
+                        {ghostCell.fg && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', ...tileStyle(ghostCell.fg, {}, tileSize) }} />}
+                      </>
                     )}
                   </div>
                 )
@@ -554,7 +581,7 @@ export default function SceneBuilder() {
             )}
           </div>
           <div style={{ marginTop: 8, color: '#555', fontSize: 11 }}>
-            ✏️ paint &nbsp;|&nbsp; ⬜ rect fill &nbsp;|&nbsp; ✋ pan &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; Ctrl+Z / Ctrl+Shift+Z = undo/redo &nbsp;|&nbsp; G = grid
+            ✏️ paint &nbsp;|&nbsp; ⬜ rect fill &nbsp;|&nbsp; ⊡ select+move &nbsp;|&nbsp; ✋ pan &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; Ctrl+Z / Ctrl+Shift+Z = undo/redo &nbsp;|&nbsp; G = grid &nbsp;|&nbsp; Right-click = erase
           </div>
         </div>
       </div>

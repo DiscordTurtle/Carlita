@@ -224,6 +224,42 @@ export const AUTOTILE = {
   'autumn_viney_wallpaper.png':  { x: 1,  y: 14, v: 'single', s: 4 },
 }
 
+// Background blocks (walls/wallpapers) — go on the BG layer in SceneBuilder
+export const BG_BLOCKS = new Set([
+  // Page 1
+  'wooden_background.png', 'rock_background.png', 'cave_background.png',
+  'blackrock_wall.png', 'chalkboard.png', 'neon_lights.png',
+  'sandstone_wall.png', 'high_tech_wall.png',
+  'flowery_wallpaper.png', 'stripey_wallpaper.png', 'brick_background.png',
+  'checker_wallpaper.png', 'magic_bacon_wallpaper.png', 'blue_star_wallpaper.png',
+  'grey_wallpaper.png', 'red_wallpaper.png', 'orange_wallpaper.png', 'yellow_wallpaper.png',
+  'green_wallpaper.png', 'aqua_wallpaper.png', 'blue_wallpaper.png', 'purple_wallpaper.png',
+  'lattice_background.png',
+  // Page 2
+  'ocean_rock.png', 'gothic_building.png', 'tenement_building.png',
+  'western_building.png', 'sequoia_tree.png', 'space_connector.png',
+  'haunted_house.png', 'cliffside.png', 'hospital_wall.png',
+  'brown_wallpaper.png', 'white_wallpaper.png', 'black_wallpaper.png', 'evil_brick_background.png',
+  // Page 3
+  'rock_n_roll_wallpaper.png', 'carnival_pipe.png',
+  'carnival_wallpaper.png', 'creepy_wallpaper.png',
+  // Page 4
+  'air_duct.png', 'fish_tank.png', 'stadium.png', 'crowded_stadium.png',
+  'pastel_pink_wallpaper.png', 'pastel_orange_wallpaper.png', 'pastel_yellow_wallpaper.png',
+  'pastel_green_wallpaper.png', 'pastel_aqua_wallpaper.png', 'pastel_blue_wallpaper.png',
+  'pastel_purple_wallpaper.png', 'viney_wallpaper.png', 'dark_red_wallpaper.png', 'autumn_viney_wallpaper.png',
+  // Page 5
+  'gilded_frame.png',
+  // Page 6
+  'dark_cave_background.png',
+  // Page 8
+  'weather_machine_background.png',
+  'dark_green_wallpaper.png', 'dark_blue_wallpaper.png',
+  'red_royal_wallpaper.png', 'blue_royal_wallpaper.png',
+  // Page 9
+  'zen_garden.png', 'celestial_frame.png', 'gingerbread_house.png', 'log_cabin.png',
+])
+
 // Map game tile IDs (from mapFormat.js) to autotile entries
 export const TILE_ID_AUTOTILE = {
   1: AUTOTILE['dirt.png'],     // DIRT
