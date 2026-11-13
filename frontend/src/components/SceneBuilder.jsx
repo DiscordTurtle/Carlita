@@ -34,12 +34,18 @@ export default function SceneBuilder() {
   const [sceneName, setSceneName] = useState('')
   const [scenes,    setScenes]    = useState(loadScenes)
   const [showLoad,  setShowLoad]  = useState(false)
-  const [tool,      setTool]      = useState('pencil')
-  const [weather,   setWeather]   = useState('sunny')
+  const [tool,        setTool]       = useState('pencil')
+  const [weather,     setWeather]    = useState('sunny')
+  const [showGrid,    setShowGrid]   = useState(true)
+  const [rectPreview, setRectPreview] = useState(null)  // { r1,c1,r2,c2 } while rect-dragging
   const painting   = useRef(false)
   const erasing    = useRef(false)
   const scrollRef  = useRef(null)
-  const dragRef    = useRef(null)  // { x, y, sl, st } while hand-dragging
+  const dragRef    = useRef(null)   // { x, y, sl, st } while hand-dragging
+  const rectStart  = useRef(null)   // { r, c } start cell for rect tool
+  const gridRef    = useRef(grid)   // kept in sync for stable undo callbacks
+  const historyRef = useRef([])     // undo stack (max 40 snapshots)
+  const redoRef    = useRef([])     // redo stack
 
   useEffect(() => {
     fetch(MANIFEST).then(r => r.json()).then(list => {
@@ -47,6 +53,8 @@ export default function SceneBuilder() {
       setSelected(list[0] ?? null)
     })
   }, [])
+
+  useEffect(() => { gridRef.current = grid }, [grid])
 
   useEffect(() => {
     if (!showLoad) return
@@ -67,18 +75,55 @@ export default function SceneBuilder() {
     return () => el.removeEventListener('wheel', handler)
   })
 
+  const pushHistory = useCallback(() => {
+    historyRef.current = [...historyRef.current.slice(-39), gridRef.current.map(r => [...r])]
+    redoRef.current = []
+  }, [])
+
+  const undo = useCallback(() => {
+    if (!historyRef.current.length) return
+    redoRef.current = [gridRef.current.map(r => [...r]), ...redoRef.current.slice(0, 39)]
+    const prev = historyRef.current[historyRef.current.length - 1]
+    historyRef.current = historyRef.current.slice(0, -1)
+    setGrid(prev)
+    setGridW(prev[0]?.length ?? DEFAULT_W)
+    setGridH(prev.length)
+  }, [])
+
+  const redo = useCallback(() => {
+    if (!redoRef.current.length) return
+    historyRef.current = [...historyRef.current.slice(-39), gridRef.current.map(r => [...r])]
+    const next = redoRef.current[0]
+    redoRef.current = redoRef.current.slice(1)
+    setGrid(next)
+    setGridW(next[0]?.length ?? DEFAULT_W)
+    setGridH(next.length)
+  }, [])
+
+  useEffect(() => {
+    const handler = e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo() }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo() }
+      if (e.key === 'g' || e.key === 'G') setShowGrid(v => !v)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [undo, redo])
+
   const filtered = search.trim()
     ? sprites.filter(s => s.includes(search.trim().toLowerCase()))
     : sprites
 
   // Resize grid, preserving existing tiles
   const resize = useCallback((w, h) => {
+    pushHistory()
     setGrid(prev => Array.from({ length: h }, (_, r) =>
       Array.from({ length: w }, (_, c) => prev[r]?.[c] ?? null)
     ))
     setGridW(w)
     setGridH(h)
-  }, [])
+  }, [pushHistory])
 
   const paint = useCallback((r, c, erase) => {
     setGrid(prev => {
@@ -89,17 +134,45 @@ export default function SceneBuilder() {
   }, [selected])
 
   const onCellDown = (r, c, e) => {
-    if (tool !== 'pencil') return
+    if (tool === 'hand') return
     e.preventDefault()
+    if (tool === 'rect') {
+      pushHistory()
+      rectStart.current = { r, c }
+      setRectPreview({ r1: r, c1: c, r2: r, c2: c })
+      return
+    }
+    pushHistory()
     painting.current = true
     erasing.current  = e.button === 2
     paint(r, c, erasing.current)
   }
   const onCellEnter = (r, c) => {
     setHover({ r, c })
+    if (tool === 'rect' && rectStart.current) {
+      setRectPreview({
+        r1: Math.min(rectStart.current.r, r), c1: Math.min(rectStart.current.c, c),
+        r2: Math.max(rectStart.current.r, r), c2: Math.max(rectStart.current.c, c),
+      })
+      return
+    }
     if (tool === 'pencil' && painting.current) paint(r, c, erasing.current)
   }
-  const stopPainting = () => { painting.current = false }
+  const stopPainting = () => {
+    if (tool === 'rect' && rectStart.current && rectPreview) {
+      const { r1, c1, r2, c2 } = rectPreview
+      setGrid(prev => {
+        const next = prev.map(row => [...row])
+        for (let r = r1; r <= r2; r++)
+          for (let c = c1; c <= c2; c++)
+            if (next[r]?.[c] !== undefined) next[r][c] = selected
+        return next
+      })
+    }
+    rectStart.current = null
+    setRectPreview(null)
+    painting.current = false
+  }
 
   const onHandDown = e => {
     if (tool !== 'hand') return
@@ -207,12 +280,16 @@ export default function SceneBuilder() {
           100×54 (GT)
         </button>
         <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
-        {[['pencil', '✏️'], ['hand', '✋']].map(([t, icon]) => (
+        {[['pencil', '✏️'], ['rect', '⬜'], ['hand', '✋']].map(([t, icon]) => (
           <button key={t} onClick={() => setTool(t)} title={t}
             style={{ padding: '4px 10px', fontSize: 16, cursor: 'pointer', background: tool === t ? '#2a3a5a' : '#1a1a2e', border: `1px solid ${tool === t ? '#6688cc' : '#444'}`, color: '#eee' }}>
             {icon}
           </button>
         ))}
+        <button onClick={() => setShowGrid(v => !v)} title="Toggle grid (G)"
+          style={{ padding: '4px 10px', fontSize: 14, cursor: 'pointer', background: showGrid ? '#2a3a5a' : '#1a1a2e', border: `1px solid ${showGrid ? '#6688cc' : '#444'}`, color: '#eee' }}>
+          #
+        </button>
         <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
         <input
           type="text"
@@ -247,7 +324,7 @@ export default function SceneBuilder() {
           )}
         </div>
         <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
-        <button onClick={() => setGrid(makeGrid(gridW, gridH))}
+        <button onClick={() => { pushHistory(); setGrid(makeGrid(gridW, gridH)) }}
           style={{ padding: '4px 10px', background: '#4a2020', border: '1px solid #884444', color: '#fcc', cursor: 'pointer' }}>
           Clear
         </button>
@@ -329,7 +406,7 @@ export default function SceneBuilder() {
         {/* Grid */}
         <div ref={scrollRef}
           style={{ flex: 1, overflow: 'auto', padding: 12, cursor: tool === 'hand' ? 'grab' : 'crosshair',
-            background: `url(/weather/${weather}.png) center/cover fixed #020809` }}
+            background: `url(/weather/${weather}.png) center/cover #020809` }}
           onMouseDown={onHandDown} onMouseMove={onHandMove} onMouseUp={onHandUp} onMouseLeave={onHandUp}
         >
           <div
@@ -338,10 +415,12 @@ export default function SceneBuilder() {
           >
             {grid.map((row, r) =>
               row.map((name, c) => {
-                const isHover = hover?.r === r && hover?.c === c
-                const atDef  = name ? AUTOTILE[name] : null
+                const isHover  = hover?.r === r && hover?.c === c
+                const inRect   = rectPreview && r >= rectPreview.r1 && r <= rectPreview.r2 && c >= rectPreview.c1 && c <= rectPreview.c2
+                const atDef    = name ? AUTOTILE[name] : null
                 const connects = (dr, dc) => name && grid[r + dr]?.[c + dc] === name
-                const G = '#2a2a3a', T = '1px solid transparent'
+                const G = showGrid ? '#2a2a3a' : 'transparent'
+                const T = '1px solid transparent'
 
                 const bgStyle = atDef ? autotileCSS(atDef, {
                   n:  grid[r-1]?.[c]   === name,
@@ -373,8 +452,8 @@ export default function SceneBuilder() {
                     style={{
                       width: tileSize, height: tileSize,
                       boxSizing: 'border-box',
-                      outline: isHover ? '2px solid #aef' : undefined,
-                      outlineOffset: '-1px',
+                      outline: inRect ? '2px solid #fa8' : isHover ? '2px solid #aef' : undefined,
+                      outlineOffset: '-2px',
                       ...borders,
                       ...bgStyle,
                     }}
@@ -384,7 +463,7 @@ export default function SceneBuilder() {
             )}
           </div>
           <div style={{ marginTop: 8, color: '#555', fontSize: 11 }}>
-            ✏️ Left-click / drag = paint &nbsp;|&nbsp; Right-click = erase &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; ✋ Drag = pan
+            ✏️ paint &nbsp;|&nbsp; ⬜ rect fill &nbsp;|&nbsp; ✋ pan &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; Ctrl+Z / Ctrl+Shift+Z = undo/redo &nbsp;|&nbsp; G = grid
           </div>
         </div>
       </div>
