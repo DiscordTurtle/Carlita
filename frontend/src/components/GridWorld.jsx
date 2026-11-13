@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { TILE_DEF, TILES } from '../maps/mapFormat.js'
 import { playSfx } from '../useAudio.js'
+import { TILE_ID_AUTOTILE, autotileCSS } from '../autotile.js'
 
 const TILE     = 40   // px per tile
 const PLAYER_W = 20   // hitbox width
@@ -218,10 +219,25 @@ export default function GridWorld({ map: initialMap, spawn, onComplete, onMenu }
     for (let c = startCol; c <= endCol; c++) {
       const id = map[r][c]
       if (id === 0) continue
-      const def = TILE_DEF[id] || TILE_DEF[0]
-      const anim =
+      const def    = TILE_DEF[id] || TILE_DEF[0]
+      const atDef  = TILE_ID_AUTOTILE[id]
+      const anim   =
         id === TILES.DOOR ? 'gwDoorPulse 1.5s ease-in-out infinite' :
         id === TILES.SEED ? 'gwSeedBob 1.2s ease-in-out infinite' : undefined
+
+      const tileStyle = atDef ? autotileCSS(atDef, {
+        n:  getTile(map, c,   r-1) === id,
+        ne: getTile(map, c+1, r-1) === id,
+        e:  getTile(map, c+1, r  ) === id,
+        se: getTile(map, c+1, r+1) === id,
+        s:  getTile(map, c,   r+1) === id,
+        sw: getTile(map, c-1, r+1) === id,
+        w:  getTile(map, c-1, r  ) === id,
+        nw: getTile(map, c-1, r-1) === id,
+      }, TILE) : def.sprite
+        ? { backgroundImage: `url(${def.sprite})`, backgroundSize: '100% 100%', imageRendering: 'pixelated' }
+        : { background: def.color, border: `1px solid ${def.border || '#000'}` }
+
       tileEls.push(
         <div
           key={`${r}-${c}`}
@@ -230,12 +246,8 @@ export default function GridWorld({ map: initialMap, spawn, onComplete, onMenu }
             left: c * TILE, top: r * TILE,
             width: TILE, height: TILE,
             boxSizing: 'border-box',
-            imageRendering: 'pixelated',
             animation: anim,
-            ...(def.sprite
-              ? { backgroundImage: `url(${def.sprite})`, backgroundSize: '100% 100%' }
-              : { background: def.color, border: `1px solid ${def.border || '#000'}` }
-            ),
+            ...tileStyle,
           }}
         />
       )

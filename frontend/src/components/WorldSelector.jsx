@@ -194,14 +194,15 @@ export default function WorldSelector({ onBack, onEnter }) {
 
       {/* ── Buttons ── */}
       <div style={{
-        display:'grid', gridTemplateColumns:'1fr 1fr', gap:10,
+        display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10,
         padding:'10px 14px 14px',
         background:'rgba(4,10,20,0.85)',
         borderTop:'2px solid #1a3448',
       }}>
         {[
-          { label:'Back',        cb: onBack,              lo:'#637282', hi:'#7a8e9e', sh:'#1a2a38' },
-          { label:'Enter World', cb:()=>onEnter(REAL),    lo:'#5a7080', hi:'#7aaabf', sh:'#0a1a28' },
+          { label:'Back',          cb: onBack,                                  lo:'#637282', hi:'#7a8e9e', sh:'#1a2a38' },
+          { label:'Enter World',   cb:()=>onEnter(REAL),                        lo:'#5a7080', hi:'#7aaabf', sh:'#0a1a28' },
+          { label:'Scene Builder', cb:()=>window.open('/scene-builder.html','_blank'), lo:'#5a3080', hi:'#9060c0', sh:'#1a0838' },
         ].map(({label,cb,lo,hi,sh}) => (
           <button key={label} onClick={cb}
             onMouseDown={e  => e.currentTarget.style.transform='translateY(3px)'}
