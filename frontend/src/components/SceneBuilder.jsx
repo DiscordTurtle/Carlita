@@ -433,7 +433,7 @@ export default function SceneBuilder() {
                   w:  grid[r]?.[c-1]   === name,
                   nw: grid[r-1]?.[c-1] === name,
                 }, tileSize) : {
-                  background: name ? `url(${BASE_URL + name}) center/100% 100% no-repeat` : 'transparent',
+                  background: name ? `url(${BASE_URL + name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat` : 'transparent',
                 }
 
                 // Autotile cells: no CSS borders (border shifts background-origin by 1px inside
