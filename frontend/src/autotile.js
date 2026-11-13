@@ -1,7 +1,9 @@
 // Autotiling system ported from growtopia-world-planner (mfatihrabbani, MIT)
-// v: 'blob'   = spread 2 (8-neighbor, 48 frames in 8×6 layout)
-//    'cross'  = spread 5 (4-neighbor, 16 frames in 8×2 layout)
-//    'single' = spread 1 (no neighbor logic, just tile at x,y)
+// v: 'blob'     = spread 2 (8-neighbor, 48 frames in 8×6)
+//    'cross'    = spread 5 (4-neighbor, 16 frames in 8×2)
+//    'platform' = spread 3 (e/w only, 4 frames: e-only, both, w-only, isolated)
+//    'vert'     = spread 7 (n/s only, 4 frames: s-only, both, n-only, isolated)
+//    'single'   = spread 1 (no neighbor logic, just tile at x,y)
 // s: tileset page number (defaults to 1 → tiles_page1.png)
 
 const SHEET_SIZE = 1024  // all tileset pages are 1024×1024
@@ -10,16 +12,36 @@ const TILE_PX    = 32    // each tile slot is 32×32 in the sheet
 // Frame offsets for each known autotile group
 // Keys match sprite filenames in /sprites/blocks/all/
 export const AUTOTILE = {
-  // ── Foreground blocks (blob, page 1) ──────────────────────────────────────
+  // ── Foreground blocks blob (page 1) ──────────────────────────────────────
   'dirt.png':               { x: 8,  y: 20, v: 'blob' },
   'bedrock.png':            { x: 0,  y: 26, v: 'blob' },
   'stone_wall.png':         { x: 16, y: 20, v: 'blob' },
   'lava_rock.png':          { x: 24, y: 20, v: 'blob' },
   'bricks.png':             { x: 8,  y: 26, v: 'blob' },
   'sand.png':               { x: 8,  y: 14, v: 'blob' },
+  // ── Foreground blocks cross (page 1) ─────────────────────────────────────
   'lava.png':               { x: 4,  y: 6,  v: 'cross' },
   'ice.png':                { x: 0,  y: 16, v: 'cross' },
   'grimstone.png':          { x: 8,  y: 12, v: 'cross' },
+  'blackrock_wall.png':     { x: 16, y: 10, v: 'cross' },
+  // ── Foreground blocks single (page 1) ────────────────────────────────────
+  'sandstone_wall.png':     { x: 12, y: 4,  v: 'single' },
+  'high_tech_wall.png':     { x: 18, y: 2,  v: 'single' },
+  // ── Foreground blocks blob (page 2) ──────────────────────────────────────
+  'snowy_rocks.png':        { x: 16, y: 17, v: 'blob',  s: 2 },
+  // ── Foreground blocks single (page 2) ────────────────────────────────────
+  'hospital_wall.png':      { x: 23, y: 14, v: 'single', s: 2 },
+  // ── Platforms (horizontal, page 1) ───────────────────────────────────────
+  'wooden_platform.png':    { x: 0,  y: 8,  v: 'platform' },
+  // ── Platforms (horizontal, page 2) ───────────────────────────────────────
+  'rock_platform.png':      { x: 16, y: 16, v: 'platform', s: 2 },
+  // ── Platforms (horizontal, page 3) ───────────────────────────────────────
+  'candy_cane_platform.png':{ x: 8,  y: 9,  v: 'platform', s: 3 },
+  // ── Platforms (horizontal, page 7) ───────────────────────────────────────
+  'grand_jade_platform.png':{ x: 0,  y: 1,  v: 'platform', s: 7 },
+  // ── Walls / backgrounds single (page 7) ──────────────────────────────────
+  'wooden_pagoda_wall.png': { x: 5,  y: 2,  v: 'single',   s: 7 },
+  'paper_wall.png':         { x: 3,  y: 0,  v: 'single',   s: 7 },
 
   // ── Backgrounds (blob, page 1) ────────────────────────────────────────────
   'wooden_background.png':  { x: 0,  y: 20, v: 'blob' },
@@ -132,6 +154,22 @@ function blobVariant({ n, e, s, w, nw, ne, se, sw }) {
   return [4,1]
 }
 
+// spread=3: horizontal platform — checks e/w only, 4 frames in row 0
+function platformVariant({ e, w }) {
+  if (e && w)  return [1, 0]  // middle
+  if (w)       return [2, 0]  // right cap
+  if (e)       return [0, 0]  // left cap
+  return [3, 0]               // isolated
+}
+
+// spread=7: vertical — checks n/s only, 4 frames in row 0
+function vertVariant({ n, s }) {
+  if (n && s)  return [1, 0]  // middle
+  if (n)       return [2, 0]  // bottom cap
+  if (s)       return [0, 0]  // top cap
+  return [3, 0]               // isolated
+}
+
 function crossVariant({ n, e, s, w }) {
   if (n&&w&&e&&s) return [0,0]
   if (w&&e&&s)    return [1,0]
@@ -159,8 +197,10 @@ export function autotileCSS(entry, neighbors, displayPx) {
   const sheetPx = SHEET_SIZE * scale
 
   let ox = 0, oy = 0
-  if      (entry.v === 'blob')  [ox, oy] = blobVariant(neighbors)
-  else if (entry.v === 'cross') [ox, oy] = crossVariant(neighbors)
+  if      (entry.v === 'blob')     [ox, oy] = blobVariant(neighbors)
+  else if (entry.v === 'cross')    [ox, oy] = crossVariant(neighbors)
+  else if (entry.v === 'platform') [ox, oy] = platformVariant(neighbors)
+  else if (entry.v === 'vert')     [ox, oy] = vertVariant(neighbors)
   // 'single': ox=0, oy=0 — just the tile at (x, y), no neighbor logic
 
   return {
