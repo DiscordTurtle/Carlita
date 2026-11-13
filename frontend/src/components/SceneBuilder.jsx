@@ -35,6 +35,7 @@ export default function SceneBuilder() {
   const [scenes,    setScenes]    = useState(loadScenes)
   const [showLoad,  setShowLoad]  = useState(false)
   const [tool,      setTool]      = useState('pencil')
+  const [weather,   setWeather]   = useState('sunny')
   const painting   = useRef(false)
   const erasing    = useRef(false)
   const scrollRef  = useRef(null)
@@ -156,8 +157,6 @@ export default function SceneBuilder() {
     canvas.width  = gridW * tileSize
     canvas.height = gridH * tileSize
     const ctx = canvas.getContext('2d')
-    ctx.fillStyle = '#1a0d2e'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     const load = src => new Promise(res => {
       const img = new Image()
@@ -165,6 +164,15 @@ export default function SceneBuilder() {
       img.onerror = () => res(null)
       img.src = src
     })
+
+    // Draw weather background first
+    const bgImg = await load(`/weather/${weather}.png`)
+    if (bgImg) {
+      ctx.drawImage(bgImg, 0, 0, canvas.width, canvas.height)
+    } else {
+      ctx.fillStyle = '#020809'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+    }
 
     for (let r = 0; r < gridH; r++) {
       for (let c = 0; c < gridW; c++) {
@@ -251,6 +259,21 @@ export default function SceneBuilder() {
           style={{ padding: '4px 10px', background: '#1a2a3a', border: '1px solid #446688', color: '#adf', cursor: 'pointer' }}>
           Export PNG
         </button>
+        <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: '#99c' }}>Sky</span>
+          <select value={weather} onChange={e => setWeather(e.target.value)}
+            style={{ background: '#222', color: '#eee', border: '1px solid #555', padding: '3px 6px', cursor: 'pointer' }}>
+            {[['sunny','☀️ Sunny'],['night','🌙 Night'],['arid','🏜️ Arid'],['rainy','🌧️ Rainy'],['spooky','🎃 Spooky'],
+              ['snowy','❄️ Snowy'],['snowy_night','🌨️ Snowy Night'],['nothing','⬛ Nothing'],
+              ['jungle','🌿 Jungle'],['mars','🔴 Mars'],['beach','🏖️ Beach'],['spring','🌸 Spring'],
+              ['undersea','🐟 Undersea'],['howling_sky','💨 Howling Sky'],['harvest','🍂 Harvest'],
+              ['fire','🔥 Fire'],['water','💧 Water'],['warp','🌀 Warp'],['comet','☄️ Comet'],
+              ['party','🎉 Party'],['balloon','🎈 Balloon'],['pineapples','🍍 Pineapples'],
+              ['pagoda','🏯 Pagoda'],['pipes','🔧 Pipes'],
+            ].map(([v, label]) => <option key={v} value={v}>{label}</option>)}
+          </select>
+        </label>
         {hover && <span style={{ color: '#888', marginLeft: 8 }}>col {hover.c}, row {hover.r}</span>}
       </div>
 
@@ -305,7 +328,8 @@ export default function SceneBuilder() {
 
         {/* Grid */}
         <div ref={scrollRef}
-          style={{ flex: 1, overflow: 'auto', padding: 12, cursor: tool === 'hand' ? 'grab' : 'crosshair' }}
+          style={{ flex: 1, overflow: 'auto', padding: 12, cursor: tool === 'hand' ? 'grab' : 'crosshair',
+            background: `url(/weather/${weather}.png) center/cover fixed #020809` }}
           onMouseDown={onHandDown} onMouseMove={onHandMove} onMouseUp={onHandUp} onMouseLeave={onHandUp}
         >
           <div
@@ -329,7 +353,7 @@ export default function SceneBuilder() {
                   w:  grid[r]?.[c-1]   === name,
                   nw: grid[r-1]?.[c-1] === name,
                 }, tileSize) : {
-                  background: name ? `url(${BASE_URL + name}) center/100% 100% no-repeat` : '#1a0d2e',
+                  background: name ? `url(${BASE_URL + name}) center/100% 100% no-repeat` : 'transparent',
                 }
 
                 // Autotile cells: no CSS borders (border shifts background-origin by 1px inside
