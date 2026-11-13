@@ -161,11 +161,12 @@ export default function SceneBuilder() {
   const stopPainting = () => {
     if (tool === 'rect' && rectStart.current && rectPreview) {
       const { r1, c1, r2, c2 } = rectPreview
+      const erase = rectStart.current.erase
       setGrid(prev => {
         const next = prev.map(row => [...row])
         for (let r = r1; r <= r2; r++)
           for (let c = c1; c <= c2; c++)
-            if (next[r]?.[c] !== undefined) next[r][c] = rectStart.current.erase ? null : selected
+            if (next[r]?.[c] !== undefined) next[r][c] = erase ? null : selected
         return next
       })
     }
