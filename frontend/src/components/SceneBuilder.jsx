@@ -46,6 +46,12 @@ export default function SceneBuilder() {
   const gridRef    = useRef(grid)   // kept in sync for stable undo callbacks
   const historyRef = useRef([])     // undo stack (max 40 snapshots)
   const redoRef    = useRef([])     // redo stack
+  // Select-move tool
+  // selState: null | {phase:'selecting'|'selected'|'moving', r1,c1,r2,c2, dr?,dc?}
+  const [selState,    setSelState]   = useState(null)
+  const selStart    = useRef(null)   // {r,c} where selection drag started
+  const selDragCell = useRef(null)   // {r,c} where move drag started
+  const selTiles    = useRef(null)   // snapshot of tiles before move
 
   useEffect(() => {
     fetch(MANIFEST).then(r => r.json()).then(list => {
@@ -106,6 +112,7 @@ export default function SceneBuilder() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo() }
       if ((e.ctrlKey || e.metaKey) && e.key === 'y') { e.preventDefault(); redo() }
       if (e.key === 'g' || e.key === 'G') setShowGrid(v => !v)
+      if (e.key === 'Escape') setSelState(null)
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -136,6 +143,24 @@ export default function SceneBuilder() {
   const onCellDown = (r, c, e) => {
     if (tool === 'hand') return
     e.preventDefault()
+    if (tool === 'select') {
+      // If clicking inside an existing selection → start move
+      if (selState?.phase === 'selected') {
+        const { r1, c1, r2, c2 } = selState
+        if (r >= r1 && r <= r2 && c >= c1 && c <= c2) {
+          selDragCell.current = { r, c }
+          selTiles.current = Array.from({ length: r2-r1+1 }, (_, dr) =>
+            Array.from({ length: c2-c1+1 }, (_, dc) => gridRef.current[r1+dr]?.[c1+dc] ?? null)
+          )
+          setSelState({ phase: 'moving', r1, c1, r2, c2, dr: 0, dc: 0 })
+          return
+        }
+      }
+      // Start new selection
+      selStart.current = { r, c }
+      setSelState({ phase: 'selecting', r1: r, c1: c, r2: r, c2: c })
+      return
+    }
     if (tool === 'rect') {
       pushHistory()
       rectStart.current = { r, c, erase: e.button === 2 }
@@ -149,6 +174,15 @@ export default function SceneBuilder() {
   }
   const onCellEnter = (r, c) => {
     setHover({ r, c })
+    if (tool === 'select') {
+      if (selState?.phase === 'selecting' && selStart.current) {
+        const { r: sr, c: sc } = selStart.current
+        setSelState({ phase: 'selecting', r1: Math.min(sr, r), c1: Math.min(sc, c), r2: Math.max(sr, r), c2: Math.max(sc, c) })
+      } else if (selState?.phase === 'moving' && selDragCell.current) {
+        setSelState(prev => ({ ...prev, dr: r - selDragCell.current.r, dc: c - selDragCell.current.c }))
+      }
+      return
+    }
     if (tool === 'rect' && rectStart.current) {
       setRectPreview({
         r1: Math.min(rectStart.current.r, r), c1: Math.min(rectStart.current.c, c),
@@ -159,6 +193,36 @@ export default function SceneBuilder() {
     if (tool === 'pencil' && painting.current) paint(r, c, erasing.current)
   }
   const stopPainting = () => {
+    if (tool === 'select') {
+      if (selState?.phase === 'selecting') {
+        setSelState(prev => ({ ...prev, phase: 'selected' }))
+        selStart.current = null
+      } else if (selState?.phase === 'moving') {
+        const { r1, c1, r2, c2, dr, dc } = selState
+        pushHistory()
+        setGrid(prev => {
+          const next = prev.map(row => [...row])
+          // Clear only source cells that had tiles
+          for (let dri = 0; dri <= r2-r1; dri++)
+            for (let dci = 0; dci <= c2-c1; dci++)
+              if (selTiles.current[dri][dci] !== null && next[r1+dri]?.[c1+dci] !== undefined)
+                next[r1+dri][c1+dci] = null
+          // Write non-null tiles to destination
+          for (let dri = 0; dri <= r2-r1; dri++)
+            for (let dci = 0; dci <= c2-c1; dci++) {
+              const tile = selTiles.current[dri][dci]
+              if (tile !== null) {
+                const nr = r1+dr+dri, nc = c1+dc+dci
+                if (next[nr]?.[nc] !== undefined) next[nr][nc] = tile
+              }
+            }
+          return next
+        })
+        setSelState({ phase: 'selected', r1: r1+dr, c1: c1+dc, r2: r2+dr, c2: c2+dc })
+        selDragCell.current = null
+      }
+      return
+    }
     if (tool === 'rect' && rectStart.current && rectPreview) {
       const { r1, c1, r2, c2 } = rectPreview
       const erase = rectStart.current.erase
@@ -281,7 +345,7 @@ export default function SceneBuilder() {
           100×54 (GT)
         </button>
         <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
-        {[['pencil', '✏️'], ['rect', '⬜'], ['hand', '✋']].map(([t, icon]) => (
+        {[['pencil', '✏️'], ['rect', '⬜'], ['select', '⊡'], ['hand', '✋']].map(([t, icon]) => (
           <button key={t} onClick={() => setTool(t)} title={t}
             style={{ padding: '4px 10px', fontSize: 16, cursor: 'pointer', background: tool === t ? '#2a3a5a' : '#1a1a2e', border: `1px solid ${tool === t ? '#6688cc' : '#444'}`, color: '#eee' }}>
             {icon}
@@ -423,6 +487,17 @@ export default function SceneBuilder() {
                 const G = showGrid ? '#2a2a3a' : 'transparent'
                 const T = '1px solid transparent'
 
+                // Selection tool visuals
+                const inSel = selState && r >= selState.r1 && r <= selState.r2 && c >= selState.c1 && c <= selState.c2
+                const isMovingSource = selState?.phase === 'moving' && inSel
+                let ghostTile = null
+                if (selState?.phase === 'moving') {
+                  const { r1, c1, dr, dc } = selState
+                  const dri = r - (r1 + dr), dci = c - (c1 + dc)
+                  if (dri >= 0 && dci >= 0 && dri <= selState.r2-r1 && dci <= selState.c2-c1)
+                    ghostTile = selTiles.current?.[dri]?.[dci] ?? null
+                }
+
                 const bgStyle = atDef ? autotileCSS(atDef, {
                   n:  grid[r-1]?.[c]   === name,
                   ne: grid[r-1]?.[c+1] === name,
@@ -445,20 +520,35 @@ export default function SceneBuilder() {
                   borderLeft:   connects( 0,-1) ? T : `1px solid ${G}`,
                 }
 
+                const selOutline =
+                  inSel && selState.phase !== 'moving' ? '2px solid #88aaff' :
+                  ghostTile !== null                   ? '2px solid #aaccff' : undefined
+
                 return (
                   <div
                     key={`${r}-${c}`}
                     onMouseDown={e => onCellDown(r, c, e)}
                     onMouseEnter={() => onCellEnter(r, c)}
                     style={{
+                      position: 'relative',
                       width: tileSize, height: tileSize,
                       boxSizing: 'border-box',
-                      outline: inRect ? '2px solid #fa8' : isHover ? '2px solid #aef' : undefined,
+                      opacity: isMovingSource ? 0.25 : 1,
+                      outline: inRect ? '2px solid #fa8' : selOutline ?? (isHover ? '2px solid #aef' : undefined),
                       outlineOffset: '-2px',
                       ...borders,
                       ...bgStyle,
                     }}
-                  />
+                  >
+                    {ghostTile && (
+                      <div style={{
+                        position: 'absolute', inset: 0, pointerEvents: 'none',
+                        ...(AUTOTILE[ghostTile]
+                          ? autotileCSS(AUTOTILE[ghostTile], {}, tileSize)
+                          : { background: `url(${BASE_URL + ghostTile}) center/calc(100% + 2px) calc(100% + 2px) no-repeat` }),
+                      }} />
+                    )}
+                  </div>
                 )
               })
             )}
