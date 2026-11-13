@@ -12,7 +12,7 @@ const BASE_URL = '/sprites/blocks/all/'
 const DEFAULT_W = 20
 const DEFAULT_H = 15
 const DEFAULT_TILE = 32
-const MAX_SHOWN = 80  // max sprites shown in picker at once
+const MAX_SHOWN = 300
 const LS_KEY = 'sceneBuilder_scenes'
 
 function makeGrid(w, h) {
@@ -283,7 +283,7 @@ export default function SceneBuilder() {
                 <div key={name} title={name.replace('.png', '')} onClick={() => setSelected(name)}
                   style={{ ...base, ...autotileCSS(atDef, {}, 32) }} />
               ) : (
-                <img key={name} src={BASE_URL + name} title={name.replace('.png', '')} onClick={() => setSelected(name)}
+                <img key={name} src={BASE_URL + name} title={name.replace('.png', '')} onClick={() => setSelected(name)} loading="lazy"
                   style={{ ...base, background: 'repeating-conic-gradient(#2a2a3a 0% 25%, #1a1a2a 0% 50%) 0 0 / 8px 8px' }} />
               )
             })}
