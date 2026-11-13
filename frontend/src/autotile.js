@@ -171,8 +171,10 @@ export const AUTOTILE = {
   // ── Page 8: single ────────────────────────────────────────────────────────
   'red_royal_wallpaper.png':     { x: 8,  y: 5,  v: 'single', s: 8 },
   'blue_royal_wallpaper.png':    { x: 9,  y: 5,  v: 'single', s: 8 },
+  'amethyst_block.png':          { x: 14, y: 5,  v: 'single', s: 8 },
   'dark_green_wallpaper.png':    { x: 11, y: 9,  v: 'single', s: 8 },
   'dark_blue_wallpaper.png':     { x: 11, y: 10, v: 'single', s: 8 },
+  'obsidian.png':                { x: 14, y: 11, v: 'single', s: 8 },
   'weather_machine_background.png': { x: 3, y: 6, v: 'single', s: 8 },
 
   // ── Page 9: cross ─────────────────────────────────────────────────────────
@@ -186,6 +188,26 @@ export const AUTOTILE = {
   'log_cabin_roof.png':     { x: 0,  y: 7,  v: 'platform', s: 9 },
   'twinkling_lights.png':   { x: 0,  y: 10, v: 'platform', s: 9 },
   'a_row_of_winterfest_socks.png': { x: 12, y: 11, v: 'platform', s: 9 },
+  // ── Page 9: single ────────────────────────────────────────────────────────
+  'opal_block.png':              { x: 14, y: 4,  v: 'single',   s: 9 },
+  'kaleidoscopic_wallpaper.png': { x: 4,  y: 4,  v: 'single',   s: 9 },
+  'gingerbread_block.png':       { x: 13, y: 7,  v: 'single',   s: 9 },
+  'smores_block.png':            { x: 12, y: 10, v: 'single',   s: 9 },
+  'cherry_jelly_block.png':      { x: 6,  y: 12, v: 'single',   s: 9 },
+  'blueberry_jelly_block.png':   { x: 8,  y: 12, v: 'single',   s: 9 },
+  'orange_jelly_block.png':      { x: 12, y: 12, v: 'single',   s: 9 },
+  'lime_jelly_block.png':        { x: 14, y: 12, v: 'single',   s: 9 },
+  'lemon_jelly_block.png':       { x: 10, y: 12, v: 'single',   s: 9 },
+  'white_chocolate_block.png':   { x: 8,  y: 13, v: 'single',   s: 9 },
+  'chocolate_swirl_block.png':   { x: 9,  y: 13, v: 'single',   s: 9 },
+  'chocolate_sprinkles_block.png': { x: 10, y: 13, v: 'single', s: 9 },
+  'chocolate_orange_block.png':  { x: 7,  y: 13, v: 'single',   s: 9 },
+  'chocolate_cherry_block.png':  { x: 6,  y: 13, v: 'single',   s: 9 },
+  'sun_yellow_dancefloor.png':   { x: 11, y: 13, v: 'single',   s: 9 },
+  'hot_pink_dancefloor.png':     { x: 12, y: 13, v: 'single',   s: 9 },
+  'bodacious_blue_dancefloor.png': { x: 13, y: 13, v: 'single', s: 9 },
+  'groovy_green_dancefloor.png': { x: 14, y: 13, v: 'single',   s: 9 },
+  'raving_red_dancefloor.png':   { x: 15, y: 13, v: 'single',   s: 9 },
 
   // ── Wallpapers / single-frame backgrounds (page 1) ───────────────────────
   'flowery_wallpaper.png':       { x: 0,  y: 0,  v: 'single' },
