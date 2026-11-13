@@ -410,7 +410,7 @@ export default function SceneBuilder() {
         >
           <div
             style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${gridW}, ${tileSize}px)`, userSelect: 'none', border: '1px solid #444',
-              background: `url(/weather/${weather}.png) 0 0 / 100% 100%` }}
+              background: `url(/weather/${weather}.png) center / ${100 * tileSize}px ${54 * tileSize}px` }}
             onContextMenu={e => e.preventDefault()}
           >
             {grid.map((row, r) =>
