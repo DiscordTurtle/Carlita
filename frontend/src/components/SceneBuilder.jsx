@@ -405,12 +405,12 @@ export default function SceneBuilder() {
 
         {/* Grid */}
         <div ref={scrollRef}
-          style={{ flex: 1, overflow: 'auto', padding: 12, cursor: tool === 'hand' ? 'grab' : 'crosshair',
-            background: `url(/weather/${weather}.png) center/cover #020809` }}
+          style={{ flex: 1, overflow: 'auto', padding: 12, cursor: tool === 'hand' ? 'grab' : 'crosshair', background: '#020809' }}
           onMouseDown={onHandDown} onMouseMove={onHandMove} onMouseUp={onHandUp} onMouseLeave={onHandUp}
         >
           <div
-            style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${gridW}, ${tileSize}px)`, userSelect: 'none', border: '1px solid #444' }}
+            style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${gridW}, ${tileSize}px)`, userSelect: 'none', border: '1px solid #444',
+              background: `url(/weather/${weather}.png) 0 0 / 100% 100%` }}
             onContextMenu={e => e.preventDefault()}
           >
             {grid.map((row, r) =>
