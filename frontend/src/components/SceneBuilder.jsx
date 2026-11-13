@@ -34,8 +34,11 @@ export default function SceneBuilder() {
   const [sceneName, setSceneName] = useState('')
   const [scenes,    setScenes]    = useState(loadScenes)
   const [showLoad,  setShowLoad]  = useState(false)
+  const [tool,      setTool]      = useState('pencil')
   const painting   = useRef(false)
   const erasing    = useRef(false)
+  const scrollRef  = useRef(null)
+  const dragRef    = useRef(null)  // { x, y, sl, st } while hand-dragging
 
   useEffect(() => {
     fetch(MANIFEST).then(r => r.json()).then(list => {
@@ -50,6 +53,18 @@ export default function SceneBuilder() {
     document.addEventListener('mousedown', close)
     return () => document.removeEventListener('mousedown', close)
   }, [showLoad])
+
+  // Wheel zoom — must be non-passive to call preventDefault
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const handler = e => {
+      e.preventDefault()
+      setTileSize(prev => Math.max(8, Math.min(128, prev - Math.sign(e.deltaY) * 2)))
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  })
 
   const filtered = search.trim()
     ? sprites.filter(s => s.includes(search.trim().toLowerCase()))
@@ -73,6 +88,7 @@ export default function SceneBuilder() {
   }, [selected])
 
   const onCellDown = (r, c, e) => {
+    if (tool !== 'pencil') return
     e.preventDefault()
     painting.current = true
     erasing.current  = e.button === 2
@@ -80,9 +96,25 @@ export default function SceneBuilder() {
   }
   const onCellEnter = (r, c) => {
     setHover({ r, c })
-    if (painting.current) paint(r, c, erasing.current)
+    if (tool === 'pencil' && painting.current) paint(r, c, erasing.current)
   }
   const stopPainting = () => { painting.current = false }
+
+  const onHandDown = e => {
+    if (tool !== 'hand') return
+    dragRef.current = { x: e.clientX, y: e.clientY, sl: scrollRef.current.scrollLeft, st: scrollRef.current.scrollTop }
+    scrollRef.current.style.cursor = 'grabbing'
+  }
+  const onHandMove = e => {
+    if (!dragRef.current) return
+    scrollRef.current.scrollLeft = dragRef.current.sl - (e.clientX - dragRef.current.x)
+    scrollRef.current.scrollTop  = dragRef.current.st - (e.clientY - dragRef.current.y)
+  }
+  const onHandUp = () => {
+    if (!dragRef.current) return
+    dragRef.current = null
+    scrollRef.current.style.cursor = tool === 'hand' ? 'grab' : 'crosshair'
+  }
 
   // Save scene
   const saveScene = () => {
@@ -166,11 +198,13 @@ export default function SceneBuilder() {
           style={{ padding: '4px 10px', background: '#1a2a1a', border: '1px solid #446633', color: '#cec', cursor: 'pointer', fontSize: 11 }}>
           100×54 (GT)
         </button>
-        <label>Tile px
-          <input type="range" min={16} max={64} value={tileSize} onChange={e => setTileSize(Number(e.target.value))}
-            style={{ marginLeft: 6, verticalAlign: 'middle' }} />
-          {tileSize}
-        </label>
+        <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
+        {[['pencil', '✏️'], ['hand', '✋']].map(([t, icon]) => (
+          <button key={t} onClick={() => setTool(t)} title={t}
+            style={{ padding: '4px 10px', fontSize: 16, cursor: 'pointer', background: tool === t ? '#2a3a5a' : '#1a1a2e', border: `1px solid ${tool === t ? '#6688cc' : '#444'}`, color: '#eee' }}>
+            {icon}
+          </button>
+        ))}
         <span style={{ width: 1, background: '#444', alignSelf: 'stretch', margin: '0 4px' }} />
         <input
           type="text"
@@ -270,9 +304,12 @@ export default function SceneBuilder() {
         </div>
 
         {/* Grid */}
-        <div style={{ flex: 1, overflow: 'auto', padding: 12 }}>
+        <div ref={scrollRef}
+          style={{ flex: 1, overflow: 'auto', padding: 12, cursor: tool === 'hand' ? 'grab' : 'crosshair' }}
+          onMouseDown={onHandDown} onMouseMove={onHandMove} onMouseUp={onHandUp} onMouseLeave={onHandUp}
+        >
           <div
-            style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${gridW}, ${tileSize}px)`, cursor: 'crosshair', userSelect: 'none', border: '1px solid #444' }}
+            style={{ display: 'inline-grid', gridTemplateColumns: `repeat(${gridW}, ${tileSize}px)`, userSelect: 'none', border: '1px solid #444' }}
             onContextMenu={e => e.preventDefault()}
           >
             {grid.map((row, r) =>
@@ -323,7 +360,7 @@ export default function SceneBuilder() {
             )}
           </div>
           <div style={{ marginTop: 8, color: '#555', fontSize: 11 }}>
-            Left-click / drag = paint &nbsp;|&nbsp; Right-click = erase
+            ✏️ Left-click / drag = paint &nbsp;|&nbsp; Right-click = erase &nbsp;|&nbsp; Scroll = zoom &nbsp;|&nbsp; ✋ Drag = pan
           </div>
         </div>
       </div>
