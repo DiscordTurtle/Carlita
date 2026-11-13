@@ -1,25 +1,76 @@
 // Autotiling system ported from growtopia-world-planner (mfatihrabbani, MIT)
-// blobVariant = spread 2 (8-neighbor), crossVariant = spread 5 (4-neighbor)
-// getNeighbors returns { n,ne,e,se,s,sw,w,nw } where true = same-type tile present
+// v: 'blob'   = spread 2 (8-neighbor, 48 frames in 8×6 layout)
+//    'cross'  = spread 5 (4-neighbor, 16 frames in 8×2 layout)
+//    'single' = spread 1 (no neighbor logic, just tile at x,y)
+// s: tileset page number (defaults to 1 → tiles_page1.png)
 
-const SHEET_SIZE = 1024  // tiles_page1.png is 1024×1024
+const SHEET_SIZE = 1024  // all tileset pages are 1024×1024
 const TILE_PX    = 32    // each tile slot is 32×32 in the sheet
 
-// Frame offsets for each known autotile group: { textureX, textureY, variant }
+// Frame offsets for each known autotile group
+// Keys match sprite filenames in /sprites/blocks/all/
 export const AUTOTILE = {
-  // name → matches sprite filenames in /sprites/blocks/all/
+  // ── Foreground blocks (blob, page 1) ──────────────────────────────────────
   'dirt.png':               { x: 8,  y: 20, v: 'blob' },
   'bedrock.png':            { x: 0,  y: 26, v: 'blob' },
   'stone_wall.png':         { x: 16, y: 20, v: 'blob' },
   'lava_rock.png':          { x: 24, y: 20, v: 'blob' },
-  'wooden_background.png':  { x: 0,  y: 20, v: 'blob' },
   'bricks.png':             { x: 8,  y: 26, v: 'blob' },
-  'rock_background.png':    { x: 16, y: 26, v: 'blob' },
-  'cave_background.png':    { x: 24, y: 26, v: 'blob' },
   'sand.png':               { x: 8,  y: 14, v: 'blob' },
   'lava.png':               { x: 4,  y: 6,  v: 'cross' },
   'ice.png':                { x: 0,  y: 16, v: 'cross' },
   'grimstone.png':          { x: 8,  y: 12, v: 'cross' },
+
+  // ── Backgrounds (blob, page 1) ────────────────────────────────────────────
+  'wooden_background.png':  { x: 0,  y: 20, v: 'blob' },
+  'rock_background.png':    { x: 16, y: 26, v: 'blob' },
+  'cave_background.png':    { x: 24, y: 26, v: 'blob' },
+
+  // ── Wallpapers / single-frame backgrounds (page 1) ───────────────────────
+  'flowery_wallpaper.png':       { x: 0,  y: 0,  v: 'single' },
+  'stripey_wallpaper.png':       { x: 1,  y: 0,  v: 'single' },
+  'brick_background.png':        { x: 13, y: 1,  v: 'single' },
+  'checker_wallpaper.png':       { x: 13, y: 2,  v: 'single' },
+  'magic_bacon_wallpaper.png':   { x: 20, y: 2,  v: 'single' },
+  'blue_star_wallpaper.png':     { x: 31, y: 3,  v: 'single' },
+  'grey_wallpaper.png':          { x: 23, y: 6,  v: 'single' },
+  'red_wallpaper.png':           { x: 24, y: 6,  v: 'single' },
+  'orange_wallpaper.png':        { x: 25, y: 6,  v: 'single' },
+  'yellow_wallpaper.png':        { x: 26, y: 6,  v: 'single' },
+  'green_wallpaper.png':         { x: 27, y: 6,  v: 'single' },
+  'aqua_wallpaper.png':          { x: 28, y: 6,  v: 'single' },
+  'blue_wallpaper.png':          { x: 29, y: 6,  v: 'single' },
+  'purple_wallpaper.png':        { x: 30, y: 6,  v: 'single' },
+  'lattice_background.png':      { x: 23, y: 7,  v: 'single' },
+
+  // ── Wallpapers (page 2) ───────────────────────────────────────────────────
+  'brown_wallpaper.png':         { x: 31, y: 9,  v: 'single', s: 2 },
+  'white_wallpaper.png':         { x: 22, y: 11, v: 'single', s: 2 },
+  'black_wallpaper.png':         { x: 23, y: 11, v: 'single', s: 2 },
+  'evil_brick_background.png':   { x: 29, y: 16, v: 'single', s: 2 },
+
+  // ── Wallpapers (page 3) ───────────────────────────────────────────────────
+  'carnival_wallpaper.png':      { x: 5,  y: 7,  v: 'single', s: 3 },
+  'creepy_wallpaper.png':        { x: 10, y: 3,  v: 'single', s: 3 },
+
+  // ── Wallpapers (page 4) ───────────────────────────────────────────────────
+  'pastel_pink_wallpaper.png':   { x: 0,  y: 0,  v: 'single', s: 4 },
+  'pastel_orange_wallpaper.png': { x: 1,  y: 0,  v: 'single', s: 4 },
+  'pastel_yellow_wallpaper.png': { x: 2,  y: 0,  v: 'single', s: 4 },
+  'pastel_green_wallpaper.png':  { x: 3,  y: 0,  v: 'single', s: 4 },
+  'pastel_aqua_wallpaper.png':   { x: 4,  y: 0,  v: 'single', s: 4 },
+  'pastel_blue_wallpaper.png':   { x: 5,  y: 0,  v: 'single', s: 4 },
+  'pastel_purple_wallpaper.png': { x: 6,  y: 0,  v: 'single', s: 4 },
+  'viney_wallpaper.png':         { x: 1,  y: 2,  v: 'single', s: 4 },
+  'dark_red_wallpaper.png':      { x: 15, y: 6,  v: 'single', s: 4 },
+  'autumn_viney_wallpaper.png':  { x: 1,  y: 14, v: 'single', s: 4 },
+
+  // ── Wallpapers (page 8) ───────────────────────────────────────────────────
+  'red_royal_wallpaper.png':     { x: 8,  y: 5,  v: 'single', s: 8 },
+  'blue_royal_wallpaper.png':    { x: 9,  y: 5,  v: 'single', s: 8 },
+  'dark_green_wallpaper.png':    { x: 11, y: 9,  v: 'single', s: 8 },
+  'dark_blue_wallpaper.png':     { x: 11, y: 10, v: 'single', s: 8 },
+  'weather_machine_background.png': { x: 3, y: 6, v: 'single', s: 8 },
 }
 
 // Map game tile IDs (from mapFormat.js) to autotile entries
@@ -30,7 +81,6 @@ export const TILE_ID_AUTOTILE = {
 }
 
 function blobVariant({ n, e, s, w, nw, ne, se, sw }) {
-  // Diagonal gating: corner only counts if both orthogonal neighbours are present
   nw = nw && n && w; ne = ne && n && e; se = se && s && e; sw = sw && s && w
 
   if (nw&&n&&ne&&w&&e&&sw&&s&&se) return [0,0]
@@ -79,7 +129,7 @@ function blobVariant({ n, e, s, w, nw, ne, se, sw }) {
   if (w)                          return [6,3]
   if (n)                          return [3,1]
   if (s)                          return [2,1]
-  return [4,1]  // isolated
+  return [4,1]
 }
 
 function crossVariant({ n, e, s, w }) {
@@ -98,21 +148,25 @@ function crossVariant({ n, e, s, w }) {
   if (w)          return [7,1]
   if (n)          return [3,1]
   if (s)          return [2,1]
-  return [4,1]  // isolated
+  return [4,1]
 }
 
-// Returns CSS background properties to show the correct frame from tiles_page1.png
-// displayPx: rendered tile size in pixels (can differ from TILE_PX)
+// Returns CSS background properties to show the correct frame from the tileset
+// displayPx: rendered tile size in pixels
 export function autotileCSS(entry, neighbors, displayPx) {
-  const [ox, oy] = entry.v === 'blob' ? blobVariant(neighbors) : crossVariant(neighbors)
-  const scale    = displayPx / TILE_PX
-  const sheetPx  = SHEET_SIZE * scale
-  const px       = -((entry.x + ox) * displayPx)
-  const py       = -((entry.y + oy) * displayPx)
+  const sheet = `/sprites/tiles_page${entry.s ?? 1}.png`
+  const scale  = displayPx / TILE_PX
+  const sheetPx = SHEET_SIZE * scale
+
+  let ox = 0, oy = 0
+  if      (entry.v === 'blob')  [ox, oy] = blobVariant(neighbors)
+  else if (entry.v === 'cross') [ox, oy] = crossVariant(neighbors)
+  // 'single': ox=0, oy=0 — just the tile at (x, y), no neighbor logic
+
   return {
-    backgroundImage:    'url(/sprites/tiles_page1.png)',
+    backgroundImage:    `url(${sheet})`,
     backgroundSize:     `${sheetPx}px ${sheetPx}px`,
-    backgroundPosition: `${px}px ${py}px`,
+    backgroundPosition: `${-((entry.x + ox) * displayPx)}px ${-((entry.y + oy) * displayPx)}px`,
     imageRendering:     'pixelated',
   }
 }
