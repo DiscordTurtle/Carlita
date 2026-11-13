@@ -138,7 +138,7 @@ export default function SceneBuilder() {
     e.preventDefault()
     if (tool === 'rect') {
       pushHistory()
-      rectStart.current = { r, c }
+      rectStart.current = { r, c, erase: e.button === 2 }
       setRectPreview({ r1: r, c1: c, r2: r, c2: c })
       return
     }
@@ -165,7 +165,7 @@ export default function SceneBuilder() {
         const next = prev.map(row => [...row])
         for (let r = r1; r <= r2; r++)
           for (let c = c1; c <= c2; c++)
-            if (next[r]?.[c] !== undefined) next[r][c] = selected
+            if (next[r]?.[c] !== undefined) next[r][c] = rectStart.current.erase ? null : selected
         return next
       })
     }
