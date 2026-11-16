@@ -27,12 +27,14 @@ Open the URL Vite prints (default `http://localhost:5173`).
 
 ## Flow
 
-1. Title screen with the **Growtopia** logo and a **PLAY** button. Music starts on click (browsers block autoplay).
-2. Carlita spawns on the left holding a seed; Cristian stands on the right; a tree sits between them.
-3. Walk to the tree → press **E** → seed is planted, tree turns into a glowing **letter tree**.
-4. Press **SPACE** → tree gets punched, a letter falls.
-5. Walk over the letter → fireworks → letter modal opens, lines fade in one by one, photo appears at the end.
-6. **Bonus:** if Carlita walks onto Cristian, he says **"Te iubesc ♥"**.
+1. Title screen → PLAY → world-picker (WorldSelector)
+2. Enter **CRISTIAN_FARM** → cinematic: Cristian greets Carlita, wizard flies in, steals Cristian, leaves a PM
+3. Back to world-picker (phase 2) → enter **P4rkour** → parkour map; die = Growtopia soul-rise death + respawn
+4. Complete parkour → back to world-picker (phase 3) → enter **CRISTIAN_FARM** again (GameScene)
+5. Walk to the tree → plant seed → punch → letter falls → walk over it → fireworks → letter modal
+6. **Bonus:** if Carlita walks onto Cristian, he says **"Te iubesc ♥"**
+
+A persistent chat bar (Growtopia-style) sits at the top of every screen after the title, showing login messages, game events, and character dialog as it types live.
 
 ## Scene Builder
 
@@ -43,12 +45,19 @@ Tools: pencil, rectangle fill, select+move, hand/pan. Supports all autotile bloc
 ## TODO
 
 ### Scene Builder
-- **Bg/fg layers** — grid cells are currently a single tile. Need `{ fg, bg }` per cell so background blocks (wooden_background, rock_background, wallpapers, etc.) render behind foreground blocks, matching how Growtopia world-building works. Breaking change: grid format, JSON save/load, renderer, and block palette all need updating. Blocks with category "Background Block" / "SFX Background" auto-route to the bg layer.
 - **Skipped autotile spreads** — spreads 4 (spikes), 6 (seaweed), 9 (cave crystals) have unknown frame layouts and are not yet wired up.
 
 ### Game
+- **Zoom broken** — scroll-wheel zoom in the parkour world (GridWorld) may be broken; needs investigation.
 - **Final photo** — drop `frontend/public/us.jpg` to replace the placeholder card shown at the end of the letter modal.
 - **Letter text** — still placeholder; fill in `frontend/src/letter.js` with the real birthday message.
+
+### Done ✓
+- Bg/fg layers in Scene Builder (`{ fg, bg }` per cell, auto-routes by category)
+- Select-and-move rectangle tool in Scene Builder
+- CRISTIAN_FARM cinematic (wizard steals Cristian, explosion, PM notification)
+- Growtopia death animation in parkour (soul rises, player shrinks, instant respawn)
+- Persistent chat bar across all screens (login messages, game events, live character dialog)
 
 ## Screenshots
 
