@@ -1,74 +1,204 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { TILE_DEF, TILES } from '../maps/mapFormat.js'
-import { playSfx } from '../useAudio.js'
-import { TILE_ID_AUTOTILE, autotileCSS } from '../autotile.js'
+import { AUTOTILE, autotileCSS } from '../autotile.js'
+import { getMasterVolume, playSfx, setMasterVolume as setAudioVolume, subscribeToMasterVolume } from '../useAudio.js'
+import GameMenu from './GameMenu.jsx'
 
-const TILE     = 40   // px per tile
-const PLAYER_W = 20   // hitbox width
-const PLAYER_H = 48   // hitbox height
-const WALK     = 4    // px/frame
-const JUMP_VEL = 13   // px/frame initial upward speed
-const GRAVITY  = 0.6  // px/frame² downward acceleration
-const MAX_FALL = 32   // terminal velocity (prevents tunneling through thin tiles)
+const TILE     = 32   // physics world unit
+const PLAYER_W = 20
+const PLAYER_H = 28   // < TILE so player fits through 1-tile gaps
+const SPRITE_H = 56   // visual height of the character sprite
+const WALK     = 4
+const JUMP_VEL = 12
+const GRAVITY  = 0.55
+const MAX_FALL = 20
+const MAX_HP   = 5
+const IFRAMES  = 90   // ~1.5 s invincibility after lava hit
+const LAVA_KBX = 7
+const LAVA_KBY = 12   // upward bounce strength
 
-function getTile(map, col, row) {
-  if (row < 0 || row >= map.length || col < 0 || col >= map[0].length) return 1
-  return map[row][col]
+const DEFAULT_SCALE = 1.5   // default zoom
+const MIN_SCALE     = 0.8
+const MAX_SCALE     = 3.0
+
+// All these block movement from all sides
+const SOLID = new Set([
+  'hedge.png', 'balloon_jammer.png', 'punch_jammer.png', 'zombie_jammer.png',
+  'world_lock.png', 'bedrock.png',
+  'venus_guytrap.png', 'hanging_guytrap.png', 'death_spikes.png',
+  'lava.png',   // solid but causes damage + propulsion on contact
+])
+const PLATFORM  = new Set(['wooden_platform.png'])
+const INSTAKILL = new Set(['venus_guytrap.png', 'hanging_guytrap.png', 'death_spikes.png'])
+const LAVA_SET  = new Set(['lava.png'])
+
+const SIGN_SET  = new Set(['sign.png', 'crappy_sign.png'])
+const CHECKPOINT = 'checkpoint.png'
+const ORB_TILE   = 'great_legendary_orb.png'
+const DOOR_TILE  = 'main_door.png'
+
+const SIGN_BY_COL = {
+  2:  'Bun venit! Ajunge pana la orb... daca poti. 😏',
+  5:  'Spikes = moarte instantanee! ☠️',
+  8:  'Flytraps musca. Tare. 🌿',
+  11: 'Lava arde! 5 lovituri si gata. 🔥',
+  14: 'Atinge checkpoint-urile — iti salveaza viata! ✨',
+}
+const GENERIC_SIGNS = [
+  'Watch your step! 👀', 'One tile at a time...', 'Look before you leap! 🦘',
+  'Almost there... maybe.', 'Believe in yourself! 💪',
+]
+
+const ORB_MSG =
+  'Felicitări, Carlita! 🏆\n\n' +
+  'Ai reușit parcursul și ai câștigat Sămânța Legendară!\n' +
+  'Acum vino la mine — am nevoie de ajutor\n' +
+  'cu înmulțit un copac magic. Adu-ți sămânța! 🌱\n\n' +
+  '— Cristian'
+
+const BASE_URL = '/sprites/blocks/all/'
+
+function getFg(grid, r, c) {
+  if (r < 0 || r >= grid.length || c < 0 || c >= (grid[0]?.length ?? 0)) return null
+  return grid[r][c]?.fg ?? null
 }
 
-const isSolid    = id => TILE_DEF[id]?.solid === true
-const isPlatform = id => TILE_DEF[id]?.solid === 'top'
+function nbrs(grid, r, c, layer, name) {
+  const get = (dr, dc) => grid[r+dr]?.[c+dc]?.[layer] === name
+  return { n:get(-1,0), ne:get(-1,1), e:get(0,1), se:get(1,1), s:get(1,0), sw:get(1,-1), w:get(0,-1), nw:get(-1,-1) }
+}
 
-export default function GridWorld({ map: initialMap, spawn, onComplete, onMenu }) {
-  const ROWS = initialMap.length
-  const COLS = initialMap[0].length
+function tileStyle(name, n, size) {
+  const at = AUTOTILE[name]
+  return at
+    ? autotileCSS(at, n, size)
+    : { background: `url(${BASE_URL+name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat`, imageRendering: 'pixelated' }
+}
 
-  const spawnPx = spawn.col * TILE
-  const spawnPy = spawn.row * TILE - PLAYER_H  // feet at top of spawn tile
+export default function GridWorld({ onComplete, onMenu }) {
+  const [loading,      setLoading]      = useState(true)
+  const [scene,        setScene]        = useState(null)
+  const [hp,           setHp]           = useState(MAX_HP)
+  const [litChecks,    setLitChecks]    = useState(() => new Set())
+  const [hasOrb,       setHasOrb]       = useState(false)
+  const [showOrbMsg,   setShowOrbMsg]   = useState(false)
+  const [signText,     setSignText]     = useState(null)
+  const [removed,      setRemoved]      = useState(() => new Set())
+  const [menuOpen,     setMenuOpen]     = useState(false)
+  const [masterVolume, setMasterVolume] = useState(getMasterVolume)
+  const [tileScale,    setTileScale]    = useState(DEFAULT_SCALE)
+  const [,             setTick]         = useState(0)
 
-  const [map,     setMap]     = useState(() => initialMap.map(r => [...r]))
-  const [hasSeed, setHasSeed] = useState(false)
-  const [,        setTick]    = useState(0)  // pure re-render trigger
+  useEffect(() => setAudioVolume(masterVolume), [masterVolume])
+  useEffect(() => subscribeToMasterVolume(v => setMasterVolume(v)), [])
 
-  // Physics refs — mutated every frame, not React state
-  const pxRef      = useRef(spawnPx)
-  const pyRef      = useRef(spawnPy)
-  const vyRef      = useRef(0)
-  const prevPyRef  = useRef(spawnPy)
-  const groundedRef = useRef(true)
-  const hasSeedRef = useRef(false)
-  const mapRef     = useRef(map)
-  const facingRef  = useRef('right')
-  const walkingRef = useRef(false)
-  const keys       = useRef({ left: false, right: false })
-  const doneRef    = useRef(false)  // prevent calling onComplete twice
+  const outerRef = useRef(null)
 
-  useEffect(() => { mapRef.current = map }, [map])
+  // Zoom via scroll
+  useEffect(() => {
+    const el = outerRef.current
+    if (!el) return
+    const handler = e => {
+      e.preventDefault()
+      setTileScale(prev => Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev - e.deltaY * 0.002)))
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  })
+
+  // Derived from scene — set once after load
+  const spawnRef    = useRef({ px: 0, py: 0 })
+  const curSpawnRef = useRef(null)
+  const signsRef    = useRef([])
+  const orbRef      = useRef(null)
+
+  // Physics refs (mutated every frame)
+  const pxRef        = useRef(0)
+  const pyRef        = useRef(0)
+  const vyRef        = useRef(0)
+  const vxRef        = useRef(0)
+  const prevPyRef    = useRef(0)
+  const groundedRef  = useRef(false)
+  const facingRef    = useRef('right')
+  const ifrRef       = useRef(0)
+  const hpRef        = useRef(MAX_HP)
+  const hasOrbRef    = useRef(false)
+  const removedRef   = useRef(new Set())
+  const litRef       = useRef(new Set())
+  const keys         = useRef({ left: false, right: false })
+  const doneRef      = useRef(false)
+
+  // Load scene
+  useEffect(() => {
+    fetch('/scenes/Parkour.json')
+      .then(r => r.json())
+      .then(data => {
+        const grid = data.grid
+        const ROWS = grid.length, COLS = grid[0]?.length ?? 0
+        let spawn = { px: TILE, py: TILE * 2 }
+        const signs = []
+        let orbPos = null
+
+        for (let r = 0; r < ROWS; r++) {
+          for (let c = 0; c < COLS; c++) {
+            const fg = grid[r][c]?.fg
+            if (!fg) continue
+            if (fg === DOOR_TILE && !spawn._found) {
+              // Spawn standing on first solid floor below the door
+              let floorRow = r + 1
+              while (floorRow < ROWS && !SOLID.has(grid[floorRow]?.[c]?.fg) && !PLATFORM.has(grid[floorRow]?.[c]?.fg)) floorRow++
+              spawn = { px: c * TILE + (TILE - PLAYER_W) / 2, py: floorRow * TILE - PLAYER_H, _found: true }
+            }
+            if (SIGN_SET.has(fg)) {
+              const text = SIGN_BY_COL[c] ?? GENERIC_SIGNS[(r * 7 + c * 13) % GENERIC_SIGNS.length]
+              signs.push({ r, c, text })
+            }
+            if (fg === ORB_TILE) orbPos = { r, c }
+          }
+        }
+
+        spawnRef.current  = spawn
+        signsRef.current  = signs
+        orbRef.current    = orbPos
+        pxRef.current     = spawn.px
+        pyRef.current     = spawn.py
+
+        setScene(data)
+        setLoading(false)
+      })
+  }, [])
 
   const respawn = useCallback(() => {
-    pxRef.current      = spawnPx
-    pyRef.current      = spawnPy
-    vyRef.current      = 0
+    const sp = curSpawnRef.current ?? spawnRef.current
+    pxRef.current   = sp.px
+    pyRef.current   = sp.py
+    vyRef.current   = 0
+    vxRef.current   = 0
     groundedRef.current = false
+    ifrRef.current  = 0
+    hpRef.current   = MAX_HP
+    setHp(MAX_HP)
     playSfx('/sounds/blip.wav', { volume: 0.6 })
-  }, [spawnPx, spawnPy])
+  }, [])
 
   // Keyboard
   useEffect(() => {
+    if (loading) return
     const isLeft  = e => e.code === 'ArrowLeft'  || e.key === 'a' || e.key === 'A'
     const isRight = e => e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D'
     const isJump  = e => e.code === 'Space'      || e.key === ' '
+    const isPunch = e => e.key === 'e' || e.key === 'E'
 
     const down = e => {
-      if (isLeft(e))  { keys.current.left  = true; e.preventDefault() }
-      if (isRight(e)) { keys.current.right = true; e.preventDefault() }
+      if (isLeft(e))  { keys.current.left  = true;  e.preventDefault() }
+      if (isRight(e)) { keys.current.right = true;  e.preventDefault() }
       if (isJump(e) && !e.repeat && groundedRef.current) {
         e.preventDefault()
         vyRef.current = -JUMP_VEL
         groundedRef.current = false
         playSfx('/sounds/jump.wav', { volume: 0.7 })
       }
-      if (e.key === 'Escape') { e.preventDefault(); onMenu?.() }
+      if (isPunch(e) && !e.repeat) tryPunchOrb()
+      if (e.key === 'Escape') { e.preventDefault(); setMenuOpen(true) }
     }
     const up   = e => {
       if (isLeft(e))  keys.current.left  = false
@@ -84,243 +214,331 @@ export default function GridWorld({ map: initialMap, spawn, onComplete, onMenu }
       window.removeEventListener('keyup',   up)
       window.removeEventListener('blur',    blur)
     }
-  }, [onMenu])
+  }, [loading])
+
+  function tryPunchOrb() {
+    if (hasOrbRef.current) return
+    const orb = orbRef.current
+    if (!orb || removedRef.current.has(`${orb.r},${orb.c}`)) return
+    const px = pxRef.current + PLAYER_W / 2
+    const py = pyRef.current + PLAYER_H / 2
+    const dist = Math.hypot(px - (orb.c * TILE + TILE / 2), py - (orb.r * TILE + TILE / 2))
+    if (dist < TILE * 2.5) {
+      removedRef.current = new Set([...removedRef.current, `${orb.r},${orb.c}`])
+      setRemoved(new Set(removedRef.current))
+      hasOrbRef.current = true
+      setHasOrb(true)
+      setShowOrbMsg(true)
+      playSfx('/sounds/achievement.wav', { volume: 0.9 })
+    }
+  }
+
+  function applyLavaDamage() {
+    if (ifrRef.current > 0) return false
+    const newHp = hpRef.current - 1
+    hpRef.current   = newHp
+    ifrRef.current  = IFRAMES
+    setHp(newHp)
+    playSfx('/sounds/punch-hit.wav', { volume: 0.6 })
+    return newHp <= 0
+  }
 
   // Game loop
   useEffect(() => {
+    if (!scene) return
+    const grid = scene.grid
+    const ROWS = grid.length
+    const COLS = grid[0]?.length ?? 0
+
     let raf
     const loop = () => {
       if (doneRef.current) return
+      if (ifrRef.current > 0) ifrRef.current--
 
-      const m   = mapRef.current
-      let npx   = pxRef.current
-      let npy   = pyRef.current
+      let npx = pxRef.current
+      let npy = pyRef.current
 
-      // — Horizontal movement —
-      let dx = 0
-      if (keys.current.left)  dx = -WALK
-      if (keys.current.right) dx =  WALK
+      // — Horizontal —
+      const keysDx = keys.current.left ? -WALK : keys.current.right ? WALK : 0
+      vxRef.current *= 0.82
+      if (Math.abs(vxRef.current) < 0.1) vxRef.current = 0
+      const dx = keysDx + vxRef.current
+      if (keysDx !== 0) facingRef.current = keysDx < 0 ? 'left' : 'right'
+
       if (dx !== 0) {
-        facingRef.current  = dx < 0 ? 'left' : 'right'
-        walkingRef.current = groundedRef.current
         npx = Math.max(0, Math.min(COLS * TILE - PLAYER_W, npx + dx))
-        // X collision: check leading edge at 3 heights
         const edgeX = dx > 0 ? npx + PLAYER_W : npx
         for (const cy of [npy + 2, npy + PLAYER_H / 2, npy + PLAYER_H - 2]) {
-          if (isSolid(getTile(m, Math.floor(edgeX / TILE), Math.floor(cy / TILE)))) {
+          const name = getFg(grid, Math.floor(cy / TILE), Math.floor(edgeX / TILE))
+          if (!SOLID.has(name)) continue
+          if (INSTAKILL.has(name)) {
+            respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
+          }
+          if (LAVA_SET.has(name)) {
+            // Lava wall: push back + damage
+            const died = applyLavaDamage()
+            vxRef.current = dx > 0 ? -LAVA_KBX : LAVA_KBX
+            vyRef.current = -4
+            if (died) { respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return }
+            // Don't block movement — knockback carries them away
+          } else {
             npx = dx > 0
               ? Math.floor(edgeX / TILE) * TILE - PLAYER_W
               : (Math.floor(edgeX / TILE) + 1) * TILE
-            break
+            vxRef.current = 0
           }
+          break
         }
-      } else {
-        walkingRef.current = false
       }
 
-      // — Vertical movement —
+      // — Vertical —
       prevPyRef.current = npy
       vyRef.current = Math.min(vyRef.current + GRAVITY, MAX_FALL)
       npy += vyRef.current
       groundedRef.current = false
 
       if (vyRef.current >= 0) {
-        // Falling: check bottom corners
-        const bottomY   = npy + PLAYER_H
+        const bottomY    = npy + PLAYER_H
         const prevBottom = prevPyRef.current + PLAYER_H
         for (const cx of [npx + 2, npx + PLAYER_W - 2]) {
-          const col      = Math.floor(cx      / TILE)
-          const row      = Math.floor(bottomY / TILE)
-          const id       = getTile(m, col, row)
-          const tileTop  = row * TILE
-          if (isSolid(id) || (isPlatform(id) && prevBottom <= tileTop)) {
-            npy = tileTop - PLAYER_H
-            vyRef.current      = 0
-            groundedRef.current = true
-            break
+          const col  = Math.floor(cx / TILE)
+          const row  = Math.floor(bottomY / TILE)
+          const name = getFg(grid, row, col)
+          const tTop = row * TILE
+          if (!SOLID.has(name) && !(PLATFORM.has(name) && prevBottom <= tTop)) continue
+          if (INSTAKILL.has(name)) {
+            respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
           }
+          if (LAVA_SET.has(name)) {
+            // Land on lava: bounce up + damage
+            const died = applyLavaDamage()
+            const kbDir = (npx + PLAYER_W / 2) < (col * TILE + TILE / 2) ? -1 : 1
+            vxRef.current = kbDir * LAVA_KBX
+            vyRef.current = -LAVA_KBY
+            groundedRef.current = false
+            if (died) { respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return }
+          } else {
+            npy = tTop - PLAYER_H
+            vyRef.current = 0
+            groundedRef.current = true
+          }
+          break
         }
       } else {
-        // Rising: check top corners (platforms passable from below)
         const topY = npy
         for (const cx of [npx + 2, npx + PLAYER_W - 2]) {
-          if (isSolid(getTile(m, Math.floor(cx / TILE), Math.floor(topY / TILE)))) {
-            npy = (Math.floor(topY / TILE) + 1) * TILE
-            vyRef.current = 0
-            break
-          }
+          const name = getFg(grid, Math.floor(topY / TILE), Math.floor(cx / TILE))
+          if (!SOLID.has(name) || INSTAKILL.has(name) || LAVA_SET.has(name)) continue
+          npy = (Math.floor(topY / TILE) + 1) * TILE
+          vyRef.current = 0
+          break
         }
       }
 
-      // Fell below map → respawn
-      if (npy + PLAYER_H > ROWS * TILE) { respawn(); setTick(t => t + 1); raf = requestAnimationFrame(loop); return }
+      if (npy + PLAYER_H > ROWS * TILE) {
+        respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
+      }
 
       pxRef.current = npx
       pyRef.current = npy
 
-      // — Special tile overlap scan —
-      const topRow  = Math.max(0,       Math.floor(npy / TILE))
-      const botRow  = Math.min(ROWS - 1, Math.floor((npy + PLAYER_H) / TILE))
-      const leftCol = Math.max(0,       Math.floor(npx / TILE))
-      const rightCol = Math.min(COLS - 1, Math.floor((npx + PLAYER_W - 1) / TILE))
+      // — Overlap scan: checkpoints only (lava is solid, handled above) —
+      const tr = Math.max(0,       Math.floor(npy / TILE))
+      const br = Math.min(ROWS-1,  Math.floor((npy + PLAYER_H) / TILE))
+      const lc = Math.max(0,       Math.floor(npx / TILE))
+      const rc = Math.min(COLS-1,  Math.floor((npx + PLAYER_W - 1) / TILE))
 
-      let shouldRespawn = false, reachedDoor = false, pickedSeed = false
-      for (let r = topRow; r <= botRow; r++) {
-        for (let c = leftCol; c <= rightCol; c++) {
-          const id  = getTile(m, c, r)
-          const def = TILE_DEF[id] || {}
-          if (def.lethal)              shouldRespawn = true
-          if (def.special === 'door')  reachedDoor   = true
-          if (def.special === 'seed' && !hasSeedRef.current) pickedSeed = true
+      for (let r = tr; r <= br; r++) {
+        for (let c = lc; c <= rc; c++) {
+          const key  = `${r},${c}`
+          if (removedRef.current.has(key)) continue
+          const name = getFg(grid, r, c)
+          if (name === CHECKPOINT && !litRef.current.has(key)) {
+            litRef.current = new Set([...litRef.current, key])
+            curSpawnRef.current = { px: c * TILE + (TILE - PLAYER_W) / 2, py: r * TILE - PLAYER_H }
+            setLitChecks(new Set(litRef.current))
+            playSfx('/sounds/achievement.wav', { volume: 0.5 })
+          }
         }
       }
 
-      if (shouldRespawn) { respawn(); setTick(t => t + 1); raf = requestAnimationFrame(loop); return }
-
-      if (pickedSeed) {
-        hasSeedRef.current = true
-        // Remove seed from map immediately so next frame doesn't re-trigger
-        const newMap = mapRef.current.map(r => [...r])
-        for (let r = topRow; r <= botRow; r++)
-          for (let c = leftCol; c <= rightCol; c++)
-            if (newMap[r]?.[c] === TILES.SEED) newMap[r][c] = TILES.AIR
-        mapRef.current = newMap
-        setMap(newMap)
-        setHasSeed(true)
-        playSfx('/sounds/achievement.wav', { volume: 0.7 })
+      // Sign tooltip
+      const pcx = npx + PLAYER_W / 2
+      let nearMsg = null
+      for (const s of signsRef.current) {
+        if (Math.abs(pcx - (s.c * TILE + TILE / 2)) < TILE * 2.5) { nearMsg = s.text; break }
       }
-
-      if (reachedDoor && !doneRef.current) {
-        doneRef.current = true
-        onComplete?.({ hasSeed: hasSeedRef.current })
-        return
-      }
+      setSignText(nearMsg)
 
       setTick(t => t + 1)
       raf = requestAnimationFrame(loop)
     }
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
-  }, [respawn, onComplete, COLS, ROWS])
+  }, [scene, respawn])
 
-  // Render
+  // ---- Render ----
+  if (loading) return (
+    <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#1a0d2e', color:'#ccc', fontSize:20 }}>
+      Se încarcă parcursul…
+    </div>
+  )
+
+  const grid  = scene.grid
+  const ROWS  = grid.length
+  const COLS  = grid[0]?.length ?? 0
+  const DT    = TILE * tileScale   // display tile size
   const viewW = window.innerWidth
   const viewH = window.innerHeight
-  const camX  = Math.max(0, Math.min(pxRef.current + PLAYER_W / 2 - viewW / 2, COLS * TILE - viewW))
-  const camY  = Math.max(0, Math.min(pyRef.current + PLAYER_H / 2 - viewH / 2, ROWS * TILE - viewH))
 
-  const startCol = Math.max(0,       Math.floor(camX / TILE))
-  const endCol   = Math.min(COLS - 1, Math.ceil((camX + viewW) / TILE))
-  const startRow = Math.max(0,       Math.floor(camY / TILE))
-  const endRow   = Math.min(ROWS - 1, Math.ceil((camY + viewH) / TILE))
+  // Camera in display space
+  const dispPX = pxRef.current * tileScale
+  const dispPY = pyRef.current * tileScale
+  const dispPW = PLAYER_W * tileScale
+  const dispPH = PLAYER_H * tileScale
+  const camX   = Math.max(0, Math.min(dispPX + dispPW/2 - viewW/2, COLS*DT - viewW))
+  const camY   = Math.max(0, Math.min(dispPY + dispPH/2 - viewH/2, ROWS*DT - viewH))
+
+  const sc = Math.max(0,       Math.floor(camX / DT))
+  const ec = Math.min(COLS-1,  Math.ceil((camX + viewW) / DT))
+  const sr = Math.max(0,       Math.floor(camY / DT))
+  const er = Math.min(ROWS-1,  Math.ceil((camY + viewH) / DT))
 
   const tileEls = []
-  for (let r = startRow; r <= endRow; r++) {
-    for (let c = startCol; c <= endCol; c++) {
-      const id = map[r][c]
-      if (id === 0) continue
-      const def    = TILE_DEF[id] || TILE_DEF[0]
-      const atDef  = TILE_ID_AUTOTILE[id]
-      const anim   =
-        id === TILES.DOOR ? 'gwDoorPulse 1.5s ease-in-out infinite' :
-        id === TILES.SEED ? 'gwSeedBob 1.2s ease-in-out infinite' : undefined
+  for (let r = sr; r <= er; r++) {
+    for (let c = sc; c <= ec; c++) {
+      const cell = grid[r][c]
+      if (!cell) continue
+      const { fg, bg } = cell
 
-      const tileStyle = atDef ? autotileCSS(atDef, {
-        n:  getTile(map, c,   r-1) === id,
-        ne: getTile(map, c+1, r-1) === id,
-        e:  getTile(map, c+1, r  ) === id,
-        se: getTile(map, c+1, r+1) === id,
-        s:  getTile(map, c,   r+1) === id,
-        sw: getTile(map, c-1, r+1) === id,
-        w:  getTile(map, c-1, r  ) === id,
-        nw: getTile(map, c-1, r-1) === id,
-      }, TILE) : def.sprite
-        ? { backgroundImage: `url(${def.sprite})`, backgroundSize: '100% 100%', imageRendering: 'pixelated' }
-        : { background: def.color, border: `1px solid ${def.border || '#000'}` }
-
-      tileEls.push(
-        <div
-          key={`${r}-${c}`}
-          style={{
-            position: 'absolute',
-            left: c * TILE, top: r * TILE,
-            width: TILE, height: TILE,
-            boxSizing: 'border-box',
-            animation: anim,
-            ...tileStyle,
-          }}
-        />
+      if (bg) tileEls.push(
+        <div key={`b${r}-${c}`} style={{ position:'absolute', left:c*DT, top:r*DT, width:DT, height:DT, ...tileStyle(bg, nbrs(grid,r,c,'bg',bg), DT) }} />
       )
+      if (fg && !removedRef.current.has(`${r},${c}`)) {
+        const isLit = fg === CHECKPOINT && litRef.current.has(`${r},${c}`)
+        tileEls.push(
+          <div key={`f${r}-${c}`} style={{
+            position:'absolute', left:c*DT, top:r*DT, width:DT, height:DT,
+            filter: isLit ? 'brightness(2) drop-shadow(0 0 8px #ffff44)' : undefined,
+            ...tileStyle(fg, nbrs(grid,r,c,'fg',fg), DT)
+          }} />
+        )
+      }
     }
   }
 
-  const flip = facingRef.current === 'left' ? -1 : 1
+  // Red flash on lava hit (flash red when in iframes)
+  const lavHit = ifrRef.current > 0 && ifrRef.current % 6 < 3
+  const flip   = facingRef.current === 'left' ? -1 : 1
+  const spriteDispH = DT
+
+  // Sign tooltip in screen space
+  let signEl = null
+  if (signText) {
+    const pcx = pxRef.current + PLAYER_W / 2
+    for (const s of signsRef.current) {
+      if (Math.abs(pcx - (s.c * TILE + TILE / 2)) < TILE * 2.5) {
+        signEl = (
+          <div style={{
+            position:'fixed',
+            left: s.c * DT - camX + DT / 2,
+            top:  s.r * DT - camY - 48,
+            transform:'translateX(-50%)',
+            background:'#223a42', color:'#fff', border:'2px solid #aee2f7',
+            padding:'4px 10px', borderRadius:4, fontSize:13, fontWeight:'bold',
+            whiteSpace:'nowrap', zIndex:50, pointerEvents:'none',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.5)',
+            textShadow:'1px 1px 0 #000, -1px 1px 0 #000',
+          }}>
+            {signText}
+          </div>
+        )
+        break
+      }
+    }
+  }
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ background: '#1a0d2e' }}>
-      <style>{`
-        @keyframes gwDoorPulse {
-          0%,100% { filter: brightness(1)   drop-shadow(0 0  6px #ffd700); }
-          50%     { filter: brightness(1.6) drop-shadow(0 0 14px #ffd700); }
-        }
-        @keyframes gwSeedBob {
-          0%,100% { transform: translateY(0);    }
-          50%     { transform: translateY(-5px); }
-        }
-      `}</style>
+    <div ref={outerRef} style={{ position:'absolute', inset:0, overflow:'hidden' }}>
+      {/* Sky */}
+      <div style={{ position:'absolute', inset:0, backgroundImage:`url(/weather/${scene.weather}.png)`, backgroundSize:'cover', backgroundPosition:'center', imageRendering:'pixelated' }} />
 
-      {/* World (camera offset via transform) */}
-      <div style={{ position: 'absolute', top: 0, left: 0, transform: `translate(${-camX}px,${-camY}px)`, willChange: 'transform' }}>
+      {/* World */}
+      <div style={{ position:'absolute', top:0, left:0, transform:`translate(${-camX}px,${-camY}px)`, willChange:'transform' }}>
         {tileEls}
 
-        {/* Player */}
-        <div
-          style={{
-            position: 'absolute',
-            left: pxRef.current,
-            top:  pyRef.current - 12,  // -12 so sprite extends slightly above hitbox top
-            pointerEvents: 'none',
-            zIndex: 20,
-          }}
-        >
-          <div style={{ marginBottom: 4, textAlign: 'center', whiteSpace: 'nowrap' }}>
-            <span className="legend-name" style={{ fontSize: 13 }}>Carlita of Legend</span>
-          </div>
+        {/* Name label — centered above sprite */}
+        <div style={{
+          position:'absolute',
+          left: dispPX + dispPW / 2,
+          top:  dispPY + dispPH - spriteDispH - 20,
+          transform:'translateX(-50%)',
+          whiteSpace:'nowrap', pointerEvents:'none', zIndex:21,
+        }}>
+          <span className="legend-name" style={{ fontSize: 12 }}>Carlita of Legend</span>
+        </div>
+
+        {/* Sprite — bottom anchored to hitbox bottom */}
+        <div style={{
+          position:'absolute',
+          left: dispPX + dispPW / 2,
+          top:  dispPY + dispPH,  // hitbox bottom
+          transform:`translateX(-50%) translateY(-100%) scaleX(${flip})`,
+          transformOrigin:'bottom center',
+          pointerEvents:'none', zIndex:20,
+        }}>
           <img
             src="/sprites/carlita.png"
             alt="Carlita"
             draggable={false}
             className="pixel"
             style={{
-              height: PLAYER_H + 12,
-              width: 'auto',
-              transform: `scaleX(${flip})`,
-              transformOrigin: 'center bottom',
-              display: 'block',
+              height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
+              filter: lavHit ? 'brightness(3) sepia(1) saturate(20) hue-rotate(315deg)' : undefined,
             }}
           />
         </div>
       </div>
 
-      {/* HUD */}
-      {hasSeed && (
-        <div style={{
-          position: 'fixed', top: 16, left: 16,
-          background: 'rgba(0,0,0,0.65)', color: '#90ee90',
-          padding: '6px 14px', borderRadius: 8, fontSize: 14, fontWeight: 'bold', zIndex: 100
-        }}>
-          Seed collected!
+      {signEl}
+
+      {/* Orb in inventory */}
+      {hasOrb && (
+        <div style={{ position:'fixed', top:16, right:16, background:'rgba(0,0,0,0.7)', color:'#ffd700', padding:'5px 12px', borderRadius:8, fontSize:13, fontWeight:'bold', zIndex:100, border:'1px solid #ffd700' }}>
+          🌱 Sămânța Legendară
         </div>
       )}
 
-      {/* Controls hint */}
-      <div style={{
-        position: 'fixed', bottom: 16, left: '50%', transform: 'translateX(-50%)',
-        background: 'rgba(0,0,0,0.5)', color: '#ccc',
-        padding: '4px 12px', borderRadius: 6, fontSize: 12, zIndex: 100, pointerEvents: 'none'
-      }}>
-        Arrow keys / A D — move &nbsp;|&nbsp; Space — jump &nbsp;|&nbsp; ESC — menu
+      {/* Orb message */}
+      {showOrbMsg && (
+        <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.7)', zIndex:200 }}>
+          <div style={{ background:'#13132a', border:'2px solid #ffd700', borderRadius:10, padding:'28px 36px', maxWidth:420, textAlign:'center', boxShadow:'0 0 48px rgba(255,215,0,0.25)' }}>
+            <div style={{ fontSize:48, marginBottom:12 }}>🏆</div>
+            <div style={{ color:'#ffe', fontSize:15, lineHeight:1.75, whiteSpace:'pre-line', marginBottom:22 }}>
+              {ORB_MSG}
+            </div>
+            <button
+              onClick={() => { setShowOrbMsg(false); onComplete?.() }}
+              style={{ padding:'10px 28px', fontSize:15, fontWeight:'bold', cursor:'pointer', background:'#ffd700', color:'#1a0d2e', border:'none', borderRadius:6 }}
+            >
+              Continuă →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Controls */}
+      <div style={{ position:'fixed', bottom:16, left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.5)', color:'#ccc', padding:'4px 12px', borderRadius:6, fontSize:12, zIndex:100, pointerEvents:'none' }}>
+        ← → / A D — mișcare &nbsp;|&nbsp; Space — sărit &nbsp;|&nbsp; E — lovit &nbsp;|&nbsp; Scroll — zoom &nbsp;|&nbsp; ESC — meniu
       </div>
+
+      <GameMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        masterVolume={masterVolume}
+        setMasterVolume={setMasterVolume}
+        onExit={onMenu}
+      />
     </div>
   )
 }

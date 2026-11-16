@@ -3,7 +3,6 @@ import TitleScreen from './components/TitleScreen.jsx'
 import GameScene from './components/GameScene.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import GridWorld from './components/GridWorld.jsx'
-import { PARKOUR_MAP, SPAWN } from './maps/parkourMap.js'
 import { getMasterVolume, subscribeToMasterVolume } from './useAudio.js'
 
 // Screens: 'title' → 'worldselect' → 'parkour' → 'game'
@@ -52,7 +51,7 @@ export default function App() {
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
       {screen === 'game'        && <GameScene />}
-      {screen === 'parkour'     && <GridWorld map={PARKOUR_MAP} spawn={SPAWN} onComplete={() => setScreen('game')} />}
+      {screen === 'parkour'     && <GridWorld onComplete={() => setScreen('game')} onMenu={() => setScreen('worldselect')} />}
       {screen === 'worldselect' && <WorldSelector onBack={() => setScreen('title')} onEnter={() => setScreen('parkour')} />}
       {titleVisible && <TitleScreen onPlay={handlePlay} splitting={splitting} />}
     </div>

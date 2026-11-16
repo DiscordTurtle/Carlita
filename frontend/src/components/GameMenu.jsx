@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import GameSettings from './GameSettings.jsx'
 
-export default function GameMenu({ isOpen, onClose, masterVolume, setMasterVolume }) {
+export default function GameMenu({ isOpen, onClose, masterVolume, setMasterVolume, onExit }) {
   const [screen, setScreen] = useState('main') // 'main' or 'settings'
 
   // Reset to main screen when menu closes
@@ -63,7 +63,7 @@ export default function GameMenu({ isOpen, onClose, masterVolume, setMasterVolum
               <MenuButton onClick={onClose}>
                 Resume
               </MenuButton>
-              <MenuButton onClick={() => window.location.href = '/'}>
+              <MenuButton onClick={() => onExit ? onExit() : window.location.href = '/'}>
                 Exit World
               </MenuButton>
             </div>

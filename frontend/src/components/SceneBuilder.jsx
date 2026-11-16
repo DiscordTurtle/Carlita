@@ -13,7 +13,6 @@ const DEFAULT_W = 20
 const DEFAULT_H = 15
 const DEFAULT_TILE = 32
 const MAX_SHOWN = 300
-const LS_KEY = 'sceneBuilder_scenes'
 
 const isBg = name => name ? BG_BLOCKS.has(name) : false
 
@@ -33,8 +32,6 @@ function migrateCell(cell) {
   return cell
 }
 
-function loadScenes()   { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}') } catch { return {} } }
-function saveScenes(db) { localStorage.setItem(LS_KEY, JSON.stringify(db)) }
 
 function tileStyle(name, neighbors, displayPx) {
   if (!name) return null
@@ -54,7 +51,7 @@ export default function SceneBuilder() {
   const [tileSize, setTileSize] = useState(DEFAULT_TILE)
   const [hover,     setHover]    = useState(null)
   const [sceneName, setSceneName] = useState('')
-  const [scenes,    setScenes]    = useState(loadScenes)
+  const [scenes,    setScenes]    = useState([])
   const [showLoad,  setShowLoad]  = useState(false)
   const [tool,        setTool]       = useState('pencil')
   const [weather,     setWeather]    = useState('sunny')
@@ -79,6 +76,10 @@ export default function SceneBuilder() {
       setSprites(list)
       setSelected(list[0] ?? null)
     })
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/scenes').then(r => r.json()).then(setScenes).catch(() => {})
   }, [])
 
   useEffect(() => { gridRef.current = grid }, [grid])
@@ -287,33 +288,36 @@ export default function SceneBuilder() {
     scrollRef.current.style.cursor = tool === 'hand' ? 'grab' : 'crosshair'
   }
 
-  const saveScene = () => {
+  const saveScene = async () => {
     const name = sceneName.trim()
     if (!name) return
-    const db = { ...scenes, [name]: grid }
-    setScenes(db)
-    saveScenes(db)
+    await fetch(`/api/scenes/${encodeURIComponent(name)}`, {
+      method: 'POST', body: JSON.stringify({ grid, weather }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+    setScenes(prev => prev.includes(name) ? prev : [...prev, name].sort())
   }
 
-  const loadScene = name => {
-    const saved = scenes[name]
-    if (!saved) return
-    const g = saved.map(row => row.map(migrateCell))
+  const loadScene = async name => {
+    const r = await fetch(`/scenes/${encodeURIComponent(name)}.json`)
+    const saved = await r.json()
+    // support old format (bare array) and new { grid, weather }
+    const rawGrid = Array.isArray(saved) ? saved : saved.grid
+    if (!Array.isArray(saved) && saved.weather) setWeather(saved.weather)
+    const g = rawGrid.map(row => row.map(migrateCell))
     setGrid(g)
     setGridH(g.length)
     setGridW(g[0]?.length ?? DEFAULT_W)
     setShowLoad(false)
   }
 
-  const deleteScene = name => {
-    const db = { ...scenes }
-    delete db[name]
-    setScenes(db)
-    saveScenes(db)
+  const deleteScene = async name => {
+    await fetch(`/api/scenes/${encodeURIComponent(name)}`, { method: 'DELETE' })
+    setScenes(prev => prev.filter(n => n !== name))
   }
 
   const exportJSON = () => {
-    const blob = new Blob([JSON.stringify(grid)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify({ grid, weather })], { type: 'application/json' })
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'scene.json' })
     a.click()
   }
@@ -400,9 +404,9 @@ export default function SceneBuilder() {
           </button>
           {showLoad && (
             <div style={{ position: 'absolute', top: '100%', left: 0, background: '#1e1e30', border: '1px solid #444', zIndex: 99, minWidth: 180, maxHeight: 260, overflowY: 'auto', marginTop: 2 }}>
-              {Object.keys(scenes).length === 0
+              {scenes.length === 0
                 ? <div style={{ padding: '8px 12px', color: '#666' }}>no saved scenes</div>
-                : Object.keys(scenes).map(name => (
+                : scenes.map(name => (
                   <div key={name} style={{ display: 'flex', alignItems: 'center', padding: '5px 10px', borderBottom: '1px solid #333', gap: 6 }}>
                     <span style={{ flex: 1, cursor: 'pointer', color: '#cef' }} onClick={() => loadScene(name)}>{name}</span>
                     <button onClick={() => deleteScene(name)}
