@@ -360,7 +360,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       {chars}
       {screenOverlay}
       {gangstaVisible && (
-        <div style={{ position:'fixed', inset:0, zIndex:55, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', animation:'gangstaFade 2s ease-in-out forwards' }}>
+        <div style={{ position:'fixed', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', background:'rgba(0,0,0,0.5)', animation:'gangstaFade 2s ease-in-out forwards' }}>
           <img src="/sprites/gangsta_wizard.png" alt="" style={{ maxWidth:'70%', maxHeight:'80%', objectFit:'contain' }} />
         </div>
       )}
