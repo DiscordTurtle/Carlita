@@ -16,6 +16,7 @@ html, body, #root {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
+  color-scheme: only light;
 }
 
 img { image-rendering: pixelated; image-rendering: crisp-edges; }
@@ -28,6 +29,24 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
     -2px 0 #5A3416, 2px 0 #5A3416, 0 -2px #5A3416, 0 2px #5A3416,
     -2px -2px #5A3416, 2px -2px #5A3416, -2px 2px #5A3416, 2px 2px #5A3416,
      0 4px 0 #3A1F0C;
+}
+
+@keyframes wizExplode {
+  0%   { transform: scale(0.05); opacity: 1; }
+  60%  { opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes wizRing {
+  0%   { transform: scale(0.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes wizShockwave {
+  0%   { transform: scale(0.05); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+@keyframes stealFlash {
+  0%   { opacity: 0.9; }
+  100% { opacity: 0; }
 }
 
 .gt-panel {
@@ -252,5 +271,45 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   0%   { transform: translate(-50%, -100%) rotate(var(--angle, 0deg)) scaleY(1); opacity: 0.95; }
   40%  { opacity: 0.85; }
   100% { transform: translate(-50%, -350%) rotate(var(--angle, 0deg)) scaleY(1.2); opacity: 0; }
+}
+
+@keyframes seedBob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-25%); }
+}
+
+/* CristianTreeScene cinematic */
+@keyframes joinsBattle {
+  from { transform: scale(0) rotate(-8deg); opacity: 0; }
+  to   { transform: scale(1) rotate(0);     opacity: 1; }
+}
+@keyframes joinsSlideLeft {
+  from { transform: translateX(-160%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes joinsSlideRight {
+  from { transform: translateX(160%);  opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes stealFlash {
+  0%   { opacity: 0.55; }
+  100% { opacity: 0;    }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
+}
+
+/* LetterModal glitch */
+@keyframes letterGlitch {
+  0%   { filter: none;                                              transform: none; }
+  10%  { filter: hue-rotate(180deg) saturate(10) brightness(1.5);  transform: translate(2px,-1px); }
+  20%  { filter: none;                                              transform: translate(-2px,1px); }
+  35%  { filter: invert(1);                                         transform: translate(1px,2px); }
+  50%  { filter: none;                                              transform: none; }
+  65%  { filter: hue-rotate(270deg) brightness(2);                  transform: translate(3px,0); }
+  80%  { filter: none;                                              transform: none; }
+  90%  { filter: saturate(0) brightness(0.4);                       transform: translate(-2px,1px); }
+  100% { filter: none;                                              transform: none; }
 }
 

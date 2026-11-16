@@ -1,229 +1,240 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { AUTOTILE, autotileCSS } from '../AUTOTILE.js'
 
-const MESSAGE   = "Heyyy! La multi ani!! Vino sa vezi ce parkour am facut pentru tine!"
-const FAKE_WORLDS = ['GROW', 'BDAY23', 'PARTY', 'TEST', 'LOVE', 'CRISTIAN', 'CARLITA', 'FLOWERS']
-const REAL = 'P4rkour'
+const BASE_URL = '/sprites/blocks/all/'
+// neighbors preset: fully surrounded — gives connected/solid appearance for bg fills
+const ALL_N = { n:true,s:true,e:true,w:true,nw:true,ne:true,se:true,sw:true }
+
+function tileCss(name, displayPx) {
+  const at = AUTOTILE[name]
+  if (at) return autotileCSS(at, ALL_N, displayPx)
+  return { background:`url(${BASE_URL}${name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat`, imageRendering:'pixelated' }
+}
+
+// Phase config: which world is highlighted, what message types in
+const PHASES = {
+  1: {
+    realWorld: 'CRISTIAN_FARM',
+    myWorlds:  ['CRISTIAN_FARM', 'BDAY23', 'FLOWERS'],
+    msgSender: 'Cristian',
+    msgWorld:  'CRISTIAN_FARM',
+    msgText:   "Heyyy! La multi ani!! Vino să mă vizitezi în CRISTIAN_FARM! 🌳",
+    msgColor:  '#f0c060',
+  },
+  2: {
+    realWorld: 'P4rkour',
+    myWorlds:  ['P4rkour', 'CRISTIAN_FARM', 'BDAY23'],
+    msgSender: 'EvilWizard',
+    msgWorld:  'WIZARDWORLD',
+    msgText:   "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!",
+    msgColor:  '#ff8888',
+  },
+  3: {
+    realWorld: 'CRISTIAN_FARM',
+    myWorlds:  ['CRISTIAN_FARM', 'P4rkour', 'BDAY23'],
+    msgSender: 'Cristian',
+    msgWorld:  'CRISTIAN_FARM',
+    msgText:   "Vino să te întâlnești cu mine în CRISTIAN_FARM! Voiam să-ți arăt ceva special ♥",
+    msgColor:  '#f0c060',
+  },
+}
+
+const BASE_LOG = [
+  { t:'07:24:58', msg:'Where would you like to go? (59,342 online)' },
+  { t:'07:41:23', msg:'Where would you like to go? (61,861 online)' },
+  { t:'07:41:28', msg:'Logging on ...' },
+  { t:'07:43:48', msg:'Where would you like to go? (61,004 online)' },
+  { t:'07:48:17', msg:"You haven't set a home world yet!" },
+]
+
+const TOP_WORLDS    = ['START', 'BFN', 'GROW', 'FARM', 'BFNLOL']
+const RECENT_WORLDS = ['CRISTIAN_FARM', 'BDAY23', 'P4rkour', 'FLOWERS', 'PARTY', 'TEST', 'LOVE', 'START']
 
 function timestamp() {
   const d = new Date()
-  const h = String(d.getHours()).padStart(2, '0')
-  const m = String(d.getMinutes()).padStart(2, '0')
-  const s = String(d.getSeconds()).padStart(2, '0')
-  return `${h}:${m}:${s}`
+  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':')
 }
 
-export default function WorldSelector({ onBack, onEnter }) {
-  const [msgChars,    setMsgChars]    = useState(0)
-  const [parkourSize, setParkourSize] = useState(1)
-  const [pulse,       setPulse]       = useState(false)
-  const [selected,    setSelected]    = useState(REAL)
-  const [ts]                          = useState(timestamp)
-  const bounceTimer = useRef(null)
+function SceneBG({ grid }) {
+  if (!grid?.length) return null
+  const cols  = grid[0].length
+  const tileW = window.innerWidth / cols
+  const rows  = grid.length
 
+  return (
+    <div style={{ position:'absolute', bottom:0, left:0, right:0, height:rows * tileW, pointerEvents:'none', opacity:0.7, filter:'saturate(0.2) brightness(0.55)' }}>
+      {grid.map((row, r) =>
+        row.map((cell, c) => {
+          if (!cell.fg && !cell.bg) return null
+          const W = Math.ceil(tileW)
+          return (
+            <div key={`${r}-${c}`} style={{ position:'absolute', left:Math.round(c*tileW), top:Math.round(r*tileW), width:W, height:W }}>
+              {cell.bg && <div style={{ position:'absolute', inset:0, opacity:0.45, ...tileCss(cell.bg, tileW) }} />}
+              {cell.fg && <div style={{ position:'absolute', inset:0, ...tileCss(cell.fg, tileW) }} />}
+            </div>
+          )
+        })
+      )}
+    </div>
+  )
+}
+
+function WorldPill({ name, variant = 'recent', onClick, glow = false }) {
+  const styles = {
+    my:     { background:'#1a6630', border:'2px solid #2a9948', color:'#80ffaa' },
+    top:    { background:'#8b1fa8', border:'2px solid #cc44e0', color:'#f0c0ff' },
+    recent: { background:'rgba(20,36,52,0.9)', border:'2px solid #3a5570', color:'#a8c8e8' },
+  }
+  const s = styles[variant] || styles.recent
+  return (
+    <button onClick={onClick} style={{
+      ...s,
+      flexShrink:0,
+      borderRadius:4,
+      fontFamily:'inherit', fontWeight:700, fontSize:13,
+      padding:'5px 14px', cursor: onClick ? 'pointer' : 'default',
+      whiteSpace:'nowrap',
+      boxShadow: glow ? `0 0 12px ${s.border}, 0 2px 0 rgba(0,0,0,0.6)` : '0 2px 0 rgba(0,0,0,0.6)',
+      outline: glow ? `2px solid ${s.border}` : 'none',
+      outlineOffset: 2,
+      transition:'transform 0.1s, box-shadow 0.1s',
+    }}>
+      {name}
+    </button>
+  )
+}
+
+export default function WorldSelector({ onBack, onEnterWorld, phase = 1, extraLog = [] }) {
+  const pd = PHASES[phase] || PHASES[1]
+
+  const [scene,    setScene]    = useState(null)
+  const [msgChars, setMsgChars] = useState(0)
+  const [selected, setSelected] = useState(pd.realWorld)
+  const [ts]                    = useState(timestamp)
+  const logRef = useRef(null)
+
+  // Reset typing and selected when phase changes
+  const prevPhase = useRef(phase)
   useEffect(() => {
-    if (msgChars >= MESSAGE.length) return
-    // small delay before message starts typing
+    if (prevPhase.current !== phase) {
+      prevPhase.current = phase
+      setMsgChars(0)
+      setSelected(PHASES[phase]?.realWorld ?? selected)
+    }
+  }, [phase])
+
+  // Load world scene for background
+  useEffect(() => {
+    fetch('/scenes/world-picker.json').then(r => r.json()).then(d => setScene(d.grid)).catch(() => {})
+  }, [])
+
+  // Type in the phase whisper
+  const fullMsg = `** from (${pd.msgSender}) in [${pd.msgWorld}] ** : ${pd.msgText}`
+  useEffect(() => {
+    if (msgChars >= fullMsg.length) return
     const delay = msgChars === 0 ? 900 : 35
     const id = setTimeout(() => setMsgChars(n => n + 1), delay)
     return () => clearTimeout(id)
-  }, [msgChars])
+  }, [msgChars, fullMsg.length])
 
-  function clickFake(name) {
-    setSelected(name)
-    setParkourSize(s => Math.min(s + 0.18, 2.4))
-    setPulse(true)
-    clearTimeout(bounceTimer.current)
-    bounceTimer.current = setTimeout(() => { setPulse(false); setSelected(REAL) }, 800)
+  // Auto-scroll chat to bottom when new content appears
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
+  }, [msgChars, extraLog.length])
+
+  const isWizard = pd.msgSender === 'EvilWizard'
+
+  function enter() {
+    onEnterWorld?.(selected)
   }
-
-  const realScale = `scale(${parkourSize + (pulse ? 0.1 : 0)})`
 
   return (
     <div style={{
-      position: 'absolute', inset: 0, zIndex: 50,
-      background: 'linear-gradient(180deg,#0b1826 0%,#0e1f36 55%,#091420 100%)',
-      display: 'flex', flexDirection: 'column',
-      fontFamily: '"Century Gothic",CenturyGothic,Geneva,sans-serif',
-      overflow: 'hidden',
+      position:'absolute', inset:0, overflow:'hidden',
+      background:'linear-gradient(180deg,#0a2838 0%,#0d3245 60%,#0f3648 100%)',
+      fontFamily:'"Century Gothic",CenturyGothic,Geneva,sans-serif',
+      display:'flex', flexDirection:'column',
     }}>
+      {/* Rendered world scene */}
+      <SceneBG grid={scene} />
+      {/* Tint overlay targeting #0C2D3B */}
+      <div style={{ position:'absolute', inset:0, background:'rgba(10,40,58,0.82)', pointerEvents:'none' }} />
 
-      {/* subtle BG tile texture */}
-      <div aria-hidden style={{ position:'absolute', inset:0, opacity:0.06, pointerEvents:'none' }}>
-        {Array.from({length:7}).map((_,r) => Array.from({length:12}).map((_,c) => (
-          <div key={`${r}-${c}`} style={{
-            position:'absolute', left:`${c*8.5}%`, top:`${15+r*11}%`,
-            width:40, height:40,
-            background:['#3a7aaa','#2a5a88','#4a9abf','#1a4a70'][(r*3+c)%4],
-            border:'1px solid rgba(255,255,255,0.08)',
-          }}/>
-        )))}
+      {/* ── Chat log ── */}
+      <div ref={logRef} style={{ position:'relative', zIndex:10, margin:'10px 12px 0', background:'rgba(2,10,22,0.93)', border:'2px solid #1a5878', borderRadius:3, padding:'5px 10px', fontSize:12.5, lineHeight:1.8, color:'#9ac0de', maxHeight:180, overflowY:'auto' }}>
+        {[...BASE_LOG, ...extraLog].map(({ t, msg, color }, i) => (
+          <div key={i} style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <span style={{ color:'#4a88b8', fontSize:14, flexShrink:0 }}>ⓘ</span>
+            <span style={{ color: color || undefined }}>[{t}] {msg}</span>
+          </div>
+        ))}
+        {msgChars > 0 && (
+          <div style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
+            <span style={{ color: isWizard ? '#c060ff' : '#4a88b8', fontSize:14, flexShrink:0 }}>ⓘ</span>
+            <span style={{ color: pd.msgColor }}>
+              [{ts}] {fullMsg.slice(0, msgChars)}
+              {msgChars < fullMsg.length && <span style={{ opacity:0.4 }}>|</span>}
+            </span>
+          </div>
+        )}
       </div>
-
-      {/* ── Log box (top-left bordered panel like inspo) ── */}
-      <div style={{ padding:'14px 16px 0' }}>
-        <div style={{
-          display: 'inline-block',
-          background: 'rgba(8,16,30,0.88)',
-          border: '2px solid #3a6080',
-          borderRadius: 4,
-          padding: '8px 12px',
-          fontSize: 13,
-          lineHeight: 1.7,
-          color: '#c8dff0',
-          minWidth: 320,
-          maxWidth: '55%',
-        }}>
-          <div style={{color:'#f0c040'}}>Canceled logon.</div>
-          <div>Getting server address...</div>
-          <div>Located server, connecting to 127.0.0.1:17000</div>
-          <div>Logging on...</div>
-        </div>
-      </div>
-
-      {/* ── Whisper bar — appears once message starts typing ── */}
-      {msgChars > 0 && (
-        <div style={{
-          marginTop: 10,
-          background: '#0d2e2e',
-          borderTop: '1px solid #1a5050',
-          borderBottom: '1px solid #1a5050',
-          padding: '6px 14px',
-          fontSize: 13,
-          display: 'flex', alignItems: 'baseline', gap: 6,
-          flexWrap: 'wrap',
-          color: '#e0f0f0',
-          lineHeight: 1.5,
-        }}>
-          {/* icon + timestamp */}
-          <span style={{ color:'#60c8c8', flexShrink:0, fontFamily:'monospace' }}>
-            [◉][{ts}]
-          </span>
-          {/* from header */}
-          <span style={{ color:'#d8eeee', flexShrink:0 }}>
-            ** from (Cristian) in [{REAL}] ** :
-          </span>
-          {/* message text types in */}
-          <span style={{ color:'#f0a040' }}>
-            {MESSAGE.slice(0, msgChars)}
-            {msgChars < MESSAGE.length && <span style={{opacity:0.5}}>|</span>}
-          </span>
-        </div>
-      )}
 
       {/* ── World Name ── */}
-      <div style={{
-        display:'flex', alignItems:'center', justifyContent:'center',
-        gap:14, padding:'26px 24px 20px',
-        fontSize:22, fontWeight:700, color:'#e8f4ff',
-      }}>
-        <span>World Name:</span>
-        <div style={{
-          background:'#c8dff0', border:'2px solid #8ab8d8', borderRadius:4,
-          color:'#0a1a2a', fontWeight:700, fontSize:22,
-          padding:'7px 20px', minWidth:160, textAlign:'center',
-          letterSpacing:'0.04em',
-        }}>
-          {selected}
+      <div style={{ position:'relative', zIndex:10, padding:'10px 14px 4px' }}>
+        <div style={{ color:'#c0d8f0', fontSize:13, textAlign:'center', marginBottom:8 }}>
+          Hit Enter or click 'Enter World' to enter this world!
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ color:'#e0f0ff', fontSize:20, fontWeight:700, flexShrink:0 }}>World Name:</span>
+          <div style={{ flex:1, background:'rgba(16,32,58,0.88)', border:'2px solid #3a6090', borderRadius:3, padding:'8px 16px', fontSize:20, fontWeight:700, color:'#e8f4ff', letterSpacing:'0.04em' }}>
+            {selected}
+          </div>
         </div>
       </div>
 
-      {/* ── World cards on ground strip ── */}
-      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'flex-end', overflow:'hidden' }}>
-
-        {/* cards row — pills sit above the ground */}
-        <div style={{
-          display:'flex', alignItems:'flex-end', gap:8,
-          padding:'0 20px 10px',
-          overflowX:'auto', overflowY:'visible',
-          scrollbarWidth:'none',
-        }}>
-          {FAKE_WORLDS.map(name => {
-            const active = selected === name
-            return (
-              <button key={name} onClick={() => clickFake(name)} style={{
-                flexShrink: 0,
-                background: active
-                  ? 'linear-gradient(180deg,#9050e0,#5020a0)'
-                  : 'linear-gradient(180deg,#6040a8,#3a2070)',
-                border: `2px solid ${active ? '#a070e0' : '#5040a0'}`,
-                borderRadius:5, color: active ? '#e0c8ff':'#b098d8',
-                fontFamily:'inherit', fontWeight:700, fontSize:12,
-                padding:'5px 14px', cursor:'pointer', whiteSpace:'nowrap',
-                boxShadow:'0 2px 0 #1a1040',
-                transition:'transform 0.15s',
-              }}>
-                {name}
-              </button>
-            )
-          })}
-
-          {/* P4rkour — always glowing, grows when others clicked */}
-          <button
-            onClick={() => setSelected(REAL)}
-            style={{
-              flexShrink: 0,
-              transform: realScale,
-              transformOrigin: 'bottom center',
-              transition: 'transform 0.3s cubic-bezier(.34,1.56,.64,1)',
-              background: 'linear-gradient(180deg,#b060ff,#7030c0)',
-              border: '2px solid #d090ff',
-              borderRadius: 5,
-              color: '#f8e8ff',
-              fontFamily: 'inherit', fontWeight:700, fontSize:14,
-              padding:'5px 16px', cursor:'pointer', whiteSpace:'nowrap',
-              boxShadow:'0 0 16px rgba(180,80,255,0.65), 0 3px 0 #3a0080',
-              letterSpacing:'0.03em',
-            }}
-          >
-            {REAL}
-          </button>
+      {/* ── World lists ── */}
+      <div style={{ position:'relative', zIndex:10, flex:1, padding:'6px 14px 0', display:'flex', flexDirection:'column', gap:10, minHeight:0, overflow:'hidden' }}>
+        <div>
+          <div style={{ color:'#8ab4d0', fontSize:12.5, fontWeight:700, marginBottom:5 }}>Top Worlds:</div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {TOP_WORLDS.map(w => <WorldPill key={w} name={w} variant="top" onClick={() => setSelected(w)} />)}
+          </div>
         </div>
-
-        {/* Ground strip — striped dirt blocks like inspo */}
-        <div style={{ height:52, display:'flex', borderTop:'2px solid #2a1808', flexShrink:0 }}>
-          {Array.from({length:40}).map((_,i) => (
-            <div key={i} style={{
-              flex:1,
-              background: i%2===0 ? '#3d2010':'#452614',
-              borderRight:'1px solid #2a1408',
-              backgroundImage:'repeating-linear-gradient(135deg,rgba(0,0,0,0.08) 0px,rgba(0,0,0,0.08) 3px,transparent 3px,transparent 8px)',
-            }}/>
-          ))}
+        <div>
+          <div style={{ color:'#8ab4d0', fontSize:12.5, fontWeight:700, marginBottom:5 }}>My Worlds:</div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {pd.myWorlds.map(w => (
+              <WorldPill key={w} name={w} variant="my" glow={w === pd.realWorld && selected === w} onClick={() => setSelected(w)} />
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={{ color:'#8ab4d0', fontSize:12.5, fontWeight:700, marginBottom:5 }}>Recently Visited Worlds:</div>
+          <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+            {RECENT_WORLDS.map(w => <WorldPill key={w} name={w} variant="recent" onClick={() => setSelected(w)} />)}
+          </div>
         </div>
       </div>
 
-      {/* ── Buttons ── */}
-      <div style={{
-        display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10,
-        padding:'10px 14px 14px',
-        background:'rgba(4,10,20,0.85)',
-        borderTop:'2px solid #1a3448',
-      }}>
-        {[
-          { label:'Back',          cb: onBack,                                  lo:'#637282', hi:'#7a8e9e', sh:'#1a2a38' },
-          { label:'Enter World',   cb:()=>onEnter(REAL),                        lo:'#5a7080', hi:'#7aaabf', sh:'#0a1a28' },
-          { label:'Scene Builder', cb:()=>window.open('/scene-builder.html','_blank'), lo:'#5a3080', hi:'#9060c0', sh:'#1a0838' },
-        ].map(({label,cb,lo,hi,sh}) => (
-          <button key={label} onClick={cb}
-            onMouseDown={e  => e.currentTarget.style.transform='translateY(3px)'}
-            onMouseUp={e    => e.currentTarget.style.transform=''}
-            onMouseLeave={e => e.currentTarget.style.transform=''}
-            style={{
-              background:`linear-gradient(180deg,${hi},${lo})`,
-              border:`3px solid ${hi}`,
-              borderRadius:8, color:'#f0f8ff',
-              fontFamily:'inherit', fontWeight:700, fontSize:24,
-              padding:'14px 0', cursor:'pointer',
-              boxShadow:`0 5px 0 ${sh},0 8px 24px rgba(0,0,0,0.5)`,
-              letterSpacing:'0.02em',
-              transition:'transform 0.06s',
-              textShadow:'0 2px 4px rgba(0,0,0,0.6)',
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      {/* ── Bottom buttons ── */}
+      <div style={{ position:'relative', zIndex:10, display:'grid', gridTemplateColumns:'1fr 2fr', gap:8, padding:'10px 10px 12px', background:'rgba(2,8,18,0.88)', borderTop:'2px solid #1a4060', flexShrink:0 }}>
+        <Btn onClick={onBack}>Back</Btn>
+        <Btn onClick={enter}>Enter World</Btn>
       </div>
     </div>
+  )
+}
+
+function Btn({ onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      onMouseDown={e  => e.currentTarget.style.transform='translateY(3px)'}
+      onMouseUp={e    => e.currentTarget.style.transform=''}
+      onMouseLeave={e => e.currentTarget.style.transform=''}
+      style={{ background:'linear-gradient(180deg,#3a5468,#243444)', border:'3px solid #4a7090', borderRadius:6, color:'#d0e8ff', fontFamily:'"Century Gothic",sans-serif', fontWeight:900, fontSize:26, padding:'18px 0', cursor:'pointer', boxShadow:'0 5px 0 #080f1c', transition:'transform 0.06s' }}
+    >
+      {children}
+    </button>
   )
 }

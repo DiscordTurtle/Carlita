@@ -572,7 +572,10 @@ export default function SceneBuilder() {
                     }}
                   >
                     {bgStyle && <div style={{ position: 'absolute', inset: 0, ...bgStyle }} />}
-                    {fgStyle && <div style={{ position: 'absolute', inset: 0, ...fgStyle }} />}
+                    {fgStyle && (fg.endsWith('_seed.png')
+                      ? <div style={{ position:'absolute', left:'25%', top:'25%', width:'50%', height:'50%', animation:'seedBob 2s ease-in-out infinite', boxShadow:'-2px 2px 0 rgba(0,0,0,0.5)', ...fgStyle }} />
+                      : <div style={{ position:'absolute', inset:0, boxShadow:'-3px 3px 0 rgba(0,0,0,0.5)', ...fgStyle }} />
+                    )}
                     {ghostCell && (ghostCell.bg || ghostCell.fg) && (
                       <>
                         {ghostCell.bg && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', ...tileStyle(ghostCell.bg, {}, tileSize) }} />}

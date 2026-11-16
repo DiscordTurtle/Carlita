@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AUTOTILE, autotileCSS } from '../autotile.js'
 import { getMasterVolume, playSfx, setMasterVolume as setAudioVolume, subscribeToMasterVolume } from '../useAudio.js'
 import GameMenu from './GameMenu.jsx'
@@ -7,16 +7,18 @@ const TILE     = 32   // physics world unit
 const PLAYER_W = 20
 const PLAYER_H = 28   // < TILE so player fits through 1-tile gaps
 const SPRITE_H = 56   // visual height of the character sprite
-const WALK     = 4
-const JUMP_VEL = 12
-const GRAVITY  = 0.55
-const MAX_FALL = 20
-const MAX_HP   = 5
-const IFRAMES  = 90   // ~1.5 s invincibility after lava hit
-const LAVA_KBX = 7
-const LAVA_KBY = 12   // upward bounce strength
+const WALK          = 4
+const JUMP_VEL_MIN  = 6    // keyup cut — ~1 block (32px)
+const JUMP_VEL_MAX  = 10.3 // press vel  — ~3 blocks (96px)
+const GRAVITY       = 0.55
+const MAX_FALL      = 20
+const MAX_HP        = 5
+const IFRAMES       = 90   // ~1.5 s invincibility after lava hit
+const LAVA_KBX      = 7
+const LAVA_KBY      = 12
+const DEATH_FRAMES  = 80   // ~1.3 s death animation
 
-const DEFAULT_SCALE = 1.5   // default zoom
+const DEFAULT_SCALE = () => window.innerWidth / (15 * TILE)
 const MIN_SCALE     = 0.8
 const MAX_SCALE     = 3.0
 
@@ -24,6 +26,7 @@ const MAX_SCALE     = 3.0
 const SOLID = new Set([
   'hedge.png', 'balloon_jammer.png', 'punch_jammer.png', 'zombie_jammer.png',
   'world_lock.png', 'bedrock.png',
+  'dirt.png', 'rock.png', 'coral.png', 'small_lock.png',
   'venus_guytrap.png', 'hanging_guytrap.png', 'death_spikes.png',
   'lava.png',   // solid but causes damage + propulsion on contact
 ])
@@ -74,7 +77,7 @@ function tileStyle(name, n, size) {
     : { background: `url(${BASE_URL+name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat`, imageRendering: 'pixelated' }
 }
 
-export default function GridWorld({ onComplete, onMenu }) {
+export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Parkour.json', worldLayerRef }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -92,6 +95,14 @@ export default function GridWorld({ onComplete, onMenu }) {
   useEffect(() => subscribeToMasterVolume(v => setMasterVolume(v)), [])
 
   const outerRef = useRef(null)
+  const camRef   = useRef({ x: 0, y: 0 })
+
+  // sync external world-layer overlay to our exact camera transform every frame
+  // camRef is written during render (below); useLayoutEffect fires after render
+  useLayoutEffect(() => {
+    if (worldLayerRef?.current)
+      worldLayerRef.current.style.transform = `translate(${-camRef.current.x}px,${-camRef.current.y}px)`
+  })
 
   // Zoom via scroll
   useEffect(() => {
@@ -99,7 +110,7 @@ export default function GridWorld({ onComplete, onMenu }) {
     if (!el) return
     const handler = e => {
       e.preventDefault()
-      setTileScale(prev => Math.max(MIN_SCALE, Math.min(MAX_SCALE, prev - e.deltaY * 0.002)))
+      setTileScale(prev => Math.max(window.innerWidth / (31 * TILE), Math.min(window.innerWidth / (7 * TILE), prev - e.deltaY * 0.002)))
     }
     el.addEventListener('wheel', handler, { passive: false })
     return () => el.removeEventListener('wheel', handler)
@@ -124,12 +135,17 @@ export default function GridWorld({ onComplete, onMenu }) {
   const hasOrbRef    = useRef(false)
   const removedRef   = useRef(new Set())
   const litRef       = useRef(new Set())
-  const keys         = useRef({ left: false, right: false })
-  const doneRef      = useRef(false)
+  const keys          = useRef({ left: false, right: false })
+  const airJumpsRef   = useRef(0)
+  const dyingRef      = useRef(false)
+  const deathFrameRef = useRef(0)
+  const doneRef       = useRef(false)
+
+  const [dying, setDying] = useState(false)
 
   // Load scene
   useEffect(() => {
-    fetch('/scenes/Parkour.json')
+    fetch(scenePath)
       .then(r => r.json())
       .then(data => {
         const grid = data.grid
@@ -191,11 +207,18 @@ export default function GridWorld({ onComplete, onMenu }) {
     const down = e => {
       if (isLeft(e))  { keys.current.left  = true;  e.preventDefault() }
       if (isRight(e)) { keys.current.right = true;  e.preventDefault() }
-      if (isJump(e) && !e.repeat && groundedRef.current) {
+      if (isJump(e) && !e.repeat) {
         e.preventDefault()
-        vyRef.current = -JUMP_VEL
-        groundedRef.current = false
-        playSfx('/sounds/jump.wav', { volume: 0.7 })
+        if (groundedRef.current) {
+          vyRef.current       = -JUMP_VEL_MAX
+          groundedRef.current = false
+          airJumpsRef.current = 0
+          playSfx('/sounds/jump.wav', { volume: 0.7 })
+        } else if (!dyingRef.current && airJumpsRef.current < 1) {
+          vyRef.current = -JUMP_VEL_MAX
+          airJumpsRef.current++
+          playSfx('/sounds/jump.wav', { volume: 0.5 })
+        }
       }
       if (isPunch(e) && !e.repeat) tryPunchOrb()
       if (e.key === 'Escape') { e.preventDefault(); setMenuOpen(true) }
@@ -203,6 +226,7 @@ export default function GridWorld({ onComplete, onMenu }) {
     const up   = e => {
       if (isLeft(e))  keys.current.left  = false
       if (isRight(e)) keys.current.right = false
+      if (isJump(e) && vyRef.current < -JUMP_VEL_MIN) vyRef.current = -JUMP_VEL_MIN
     }
     const blur = () => { keys.current.left = false; keys.current.right = false }
 
@@ -233,11 +257,21 @@ export default function GridWorld({ onComplete, onMenu }) {
     }
   }
 
+  function triggerDeath() {
+    if (dyingRef.current) return
+    dyingRef.current      = true
+    deathFrameRef.current = DEATH_FRAMES
+    hpRef.current         = 0
+    setHp(0)
+    setDying(true)
+    playSfx('/sounds/punch-hit.wav', { volume: 0.9 })
+  }
+
   function applyLavaDamage() {
     if (ifrRef.current > 0) return false
     const newHp = hpRef.current - 1
-    hpRef.current   = newHp
-    ifrRef.current  = IFRAMES
+    hpRef.current  = newHp
+    ifrRef.current = IFRAMES
     setHp(newHp)
     playSfx('/sounds/punch-hit.wav', { volume: 0.6 })
     return newHp <= 0
@@ -253,6 +287,20 @@ export default function GridWorld({ onComplete, onMenu }) {
     let raf
     const loop = () => {
       if (doneRef.current) return
+
+      // — Death animation —
+      if (dyingRef.current) {
+        deathFrameRef.current--
+        vyRef.current  = Math.min(vyRef.current + GRAVITY * 0.4, 4)
+        pyRef.current += vyRef.current
+        if (deathFrameRef.current <= 0) {
+          dyingRef.current = false
+          setDying(false)
+          respawn()
+        }
+        setTick(t => t + 1); raf = requestAnimationFrame(loop); return
+      }
+
       if (ifrRef.current > 0) ifrRef.current--
 
       let npx = pxRef.current
@@ -272,14 +320,14 @@ export default function GridWorld({ onComplete, onMenu }) {
           const name = getFg(grid, Math.floor(cy / TILE), Math.floor(edgeX / TILE))
           if (!SOLID.has(name)) continue
           if (INSTAKILL.has(name)) {
-            respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
+            triggerDeath(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
           }
           if (LAVA_SET.has(name)) {
             // Lava wall: push back + damage
             const died = applyLavaDamage()
             vxRef.current = dx > 0 ? -LAVA_KBX : LAVA_KBX
             vyRef.current = -4
-            if (died) { respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return }
+            if (died) { triggerDeath(); setTick(t => t+1); raf = requestAnimationFrame(loop); return }
             // Don't block movement — knockback carries them away
           } else {
             npx = dx > 0
@@ -307,7 +355,7 @@ export default function GridWorld({ onComplete, onMenu }) {
           const tTop = row * TILE
           if (!SOLID.has(name) && !(PLATFORM.has(name) && prevBottom <= tTop)) continue
           if (INSTAKILL.has(name)) {
-            respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
+            triggerDeath(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
           }
           if (LAVA_SET.has(name)) {
             // Land on lava: bounce up + damage
@@ -316,11 +364,12 @@ export default function GridWorld({ onComplete, onMenu }) {
             vxRef.current = kbDir * LAVA_KBX
             vyRef.current = -LAVA_KBY
             groundedRef.current = false
-            if (died) { respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return }
+            if (died) { triggerDeath(); setTick(t => t+1); raf = requestAnimationFrame(loop); return }
           } else {
             npy = tTop - PLAYER_H
             vyRef.current = 0
             groundedRef.current = true
+            airJumpsRef.current = 0
           }
           break
         }
@@ -329,14 +378,14 @@ export default function GridWorld({ onComplete, onMenu }) {
         for (const cx of [npx + 2, npx + PLAYER_W - 2]) {
           const name = getFg(grid, Math.floor(topY / TILE), Math.floor(cx / TILE))
           if (!SOLID.has(name) || INSTAKILL.has(name) || LAVA_SET.has(name)) continue
+          // Clamp position to ceiling but let vy drain naturally — player "hugs" ceiling
           npy = (Math.floor(topY / TILE) + 1) * TILE
-          vyRef.current = 0
           break
         }
       }
 
       if (npy + PLAYER_H > ROWS * TILE) {
-        respawn(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
+        triggerDeath(); setTick(t => t+1); raf = requestAnimationFrame(loop); return
       }
 
       pxRef.current = npx
@@ -363,10 +412,9 @@ export default function GridWorld({ onComplete, onMenu }) {
       }
 
       // Sign tooltip
-      const pcx = npx + PLAYER_W / 2
       let nearMsg = null
       for (const s of signsRef.current) {
-        if (Math.abs(pcx - (s.c * TILE + TILE / 2)) < TILE * 2.5) { nearMsg = s.text; break }
+        if (npx + PLAYER_W > s.c * TILE && npx < (s.c + 1) * TILE) { nearMsg = s.text; break }
       }
       setSignText(nearMsg)
 
@@ -398,6 +446,8 @@ export default function GridWorld({ onComplete, onMenu }) {
   const dispPH = PLAYER_H * tileScale
   const camX   = Math.max(0, Math.min(dispPX + dispPW/2 - viewW/2, COLS*DT - viewW))
   const camY   = Math.max(0, Math.min(dispPY + dispPH/2 - viewH/2, ROWS*DT - viewH))
+  camRef.current = { x: camX, y: camY }
+  window.__gCam = { x: camX, y: camY, dt: DT }
 
   const sc = Math.max(0,       Math.floor(camX / DT))
   const ec = Math.min(COLS-1,  Math.ceil((camX + viewW) / DT))
@@ -415,13 +465,18 @@ export default function GridWorld({ onComplete, onMenu }) {
         <div key={`b${r}-${c}`} style={{ position:'absolute', left:c*DT, top:r*DT, width:DT, height:DT, ...tileStyle(bg, nbrs(grid,r,c,'bg',bg), DT) }} />
       )
       if (fg && !removedRef.current.has(`${r},${c}`)) {
-        const isLit = fg === CHECKPOINT && litRef.current.has(`${r},${c}`)
+        const isLit  = fg === CHECKPOINT && litRef.current.has(`${r},${c}`)
+        const isSeed = fg.endsWith('_seed.png')
         tileEls.push(
           <div key={`f${r}-${c}`} style={{
             position:'absolute', left:c*DT, top:r*DT, width:DT, height:DT,
             filter: isLit ? 'brightness(2) drop-shadow(0 0 8px #ffff44)' : undefined,
-            ...tileStyle(fg, nbrs(grid,r,c,'fg',fg), DT)
-          }} />
+          }}>
+            {isSeed
+              ? <div style={{ position:'absolute', left:'25%', top:'25%', width:'50%', height:'50%', animation:'seedBob 2s ease-in-out infinite', boxShadow:'-2px 2px 0 rgba(0,0,0,0.5)', ...tileStyle(fg, nbrs(grid,r,c,'fg',fg), DT * 0.5) }} />
+              : <div style={{ position:'absolute', inset:0, ...tileStyle(fg, nbrs(grid,r,c,'fg',fg), DT) }} />
+            }
+          </div>
         )
       }
     }
@@ -435,9 +490,9 @@ export default function GridWorld({ onComplete, onMenu }) {
   // Sign tooltip in screen space
   let signEl = null
   if (signText) {
-    const pcx = pxRef.current + PLAYER_W / 2
+    const px = pxRef.current
     for (const s of signsRef.current) {
-      if (Math.abs(pcx - (s.c * TILE + TILE / 2)) < TILE * 2.5) {
+      if (px + PLAYER_W > s.c * TILE && px < (s.c + 1) * TILE) {
         signEl = (
           <div style={{
             position:'fixed',
@@ -445,7 +500,7 @@ export default function GridWorld({ onComplete, onMenu }) {
             top:  s.r * DT - camY - 48,
             transform:'translateX(-50%)',
             background:'#223a42', color:'#fff', border:'2px solid #aee2f7',
-            padding:'4px 10px', borderRadius:4, fontSize:13, fontWeight:'bold',
+            padding:'6px 14px', borderRadius:4, fontSize:18, fontWeight:'bold',
             whiteSpace:'nowrap', zIndex:50, pointerEvents:'none',
             boxShadow:'0 2px 8px rgba(0,0,0,0.5)',
             textShadow:'1px 1px 0 #000, -1px 1px 0 #000',
@@ -494,7 +549,11 @@ export default function GridWorld({ onComplete, onMenu }) {
             className="pixel"
             style={{
               height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
-              filter: lavHit ? 'brightness(3) sepia(1) saturate(20) hue-rotate(315deg)' : undefined,
+              filter: dying
+                ? (deathFrameRef.current % 6 < 3
+                    ? 'brightness(3) sepia(1) saturate(10) hue-rotate(315deg) opacity(0.8)'
+                    : 'brightness(0.3) saturate(0) opacity(0.6)')
+                : (lavHit ? 'brightness(3) sepia(1) saturate(20) hue-rotate(315deg)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))'),
             }}
           />
         </div>
@@ -538,6 +597,7 @@ export default function GridWorld({ onComplete, onMenu }) {
         masterVolume={masterVolume}
         setMasterVolume={setMasterVolume}
         onExit={onMenu}
+        onRespawn={respawn}
       />
     </div>
   )

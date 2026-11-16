@@ -3,9 +3,11 @@ import { LETTER_LINES, ENDING_IMAGE } from '../letter.js'
 import { playSfx } from '../useAudio.js'
 
 export default function LetterModal({ onClose }) {
-  const [shown, setShown] = useState(0)         // how many lines revealed
-  const [showImage, setShowImage] = useState(false)
-  const [imgFailed, setImgFailed] = useState(false)
+  const [shown,       setShown]       = useState(0)
+  const [showImage,   setShowImage]   = useState(false)
+  const [imgFailed,   setImgFailed]   = useState(false)
+  const [glitching,   setGlitching]   = useState(false)
+  const [cristianMsg, setCristianMsg] = useState(false)
   const timer = useRef(null)
 
   // reveal next line
@@ -19,7 +21,7 @@ export default function LetterModal({ onClose }) {
     }
   }
 
-  // auto-advance, can be sped up by clicking
+  // auto-advance lines, then glitch after photo appears
   useEffect(() => {
     playSfx('/sounds/dialog-open.wav', { volume: 0.7 })
     timer.current = setInterval(() => {
@@ -36,13 +38,25 @@ export default function LetterModal({ onClose }) {
     return () => clearInterval(timer.current)
   }, [])
 
+  // start glitch 4s after photo appears
+  useEffect(() => {
+    if (!showImage) return
+    const t1 = setTimeout(() => setGlitching(true), 4000)
+    const t2 = setTimeout(() => setCristianMsg(true), 6000)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [showImage])
+
   return (
     <div
       className="absolute inset-0 z-[200] flex items-center justify-center"
       style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,.55), rgba(0,0,0,.85))' }}
       onClick={reveal}
     >
-      <div className="gt-panel w-[min(640px,92vw)] p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="gt-panel w-[min(640px,92vw)] p-6 md:p-8"
+        style={{ animation: glitching ? 'letterGlitch 0.4s infinite' : 'none' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <span style={{ fontSize: 24 }}>♥</span>
@@ -84,10 +98,24 @@ export default function LetterModal({ onClose }) {
                 </div>
               )}
             </div>
-            <div className="text-center mt-4 text-[#3A1F0C] font-bold">Happy 1 Year, Carlita ♥</div>
+            <div className="text-center mt-4 text-[#3A1F0C] font-bold">La mulți ani, Carlita! ♥</div>
           </div>
         )}
       </div>
+
+      {/* Cristian's "I had bugs" dialogue over glitched letter */}
+      {cristianMsg && (
+        <div
+          style={{ position:'absolute', bottom:'12%', left:'50%', transform:'translateX(-50%)', background:'rgba(10,20,40,0.95)', border:'2px solid #5080b0', borderRadius:8, padding:'14px 22px', maxWidth:400, textAlign:'center', zIndex:10 }}
+          onClick={(e) => { e.stopPropagation(); playSfx('/sounds/dialog-close.wav'); onClose() }}
+        >
+          <div style={{ fontSize:13, color:'#80aacc', marginBottom:6 }}>Cristian of Legend</div>
+          <div style={{ fontSize:16, color:'#e8f4ff', lineHeight:1.6 }}>
+            Ce naiba?! Ah... știam că aveam bug-uri, bine că am o copie! 📜
+          </div>
+          <div style={{ fontSize:11, color:'#608090', marginTop:8 }}>click to close</div>
+        </div>
+      )}
     </div>
   )
 }

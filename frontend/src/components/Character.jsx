@@ -62,7 +62,7 @@ export default function Character({
               src={src}
               alt={name}
               className="pixel block"
-              style={{ height, width: 'auto' }}
+              style={{ height, width: 'auto', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' }}
               draggable={false}
             />
           </div>

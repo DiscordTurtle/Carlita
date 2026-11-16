@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 const cache = new Map()
-let masterVolume = 1
+let masterVolume = 0
 const volumeListeners = new Set()
 
 function clampVolume(v) {

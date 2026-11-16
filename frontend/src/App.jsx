@@ -3,15 +3,35 @@ import TitleScreen from './components/TitleScreen.jsx'
 import GameScene from './components/GameScene.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import GridWorld from './components/GridWorld.jsx'
+import CristianTreeScene from './components/CristianTreeScene.jsx'
 import { getMasterVolume, subscribeToMasterVolume } from './useAudio.js'
 
-// Screens: 'title' → 'worldselect' → 'parkour' → 'game'
+// Screens: 'title' → 'worldselect' → 'cristiantree' → 'worldselect' → 'parkour' → 'worldselect' → 'game'
 const SPLIT_DURATION_MS = 3300
 
 export default function App() {
-  const [screen,   setScreen]   = useState('title')
-  const [splitting, setSplitting] = useState(false)
+  const [screen,           setScreen]           = useState('title')
+  const [splitting,        setSplitting]        = useState(false)
+  const [worldPhase,       setWorldPhase]       = useState(1)
+  const [hasSeed,          setHasSeed]          = useState(false)
+  const [extraLog,         setExtraLog]         = useState([])
+  const [farmVisited,      setFarmVisited]      = useState(false)
   const audioRef = useRef(null)
+
+  function addLog(entry) {
+    setExtraLog(prev => [...prev, entry])
+  }
+
+  // Route by world name so clicking any pill + Enter World goes to the right screen
+  function enterWorld(worldName) {
+    if (worldName === 'CRISTIAN_FARM') {
+      if (worldPhase === 3) setScreen('game')
+      else { setScreen('cristiantree') }
+    } else if (worldName === 'P4rkour') {
+      setScreen('parkour')
+    }
+    // other worlds: no-op for now
+  }
 
   useEffect(() => {
     const a = new Audio('/sounds/about_theme.mp3')
@@ -50,9 +70,24 @@ export default function App() {
 
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
-      {screen === 'game'        && <GameScene />}
-      {screen === 'parkour'     && <GridWorld onComplete={() => setScreen('game')} onMenu={() => setScreen('worldselect')} />}
-      {screen === 'worldselect' && <WorldSelector onBack={() => setScreen('title')} onEnter={() => setScreen('parkour')} />}
+      {screen === 'game'          && <GameScene fromParkour={hasSeed} />}
+      {screen === 'parkour'       && <GridWorld onComplete={() => { setHasSeed(true); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }} onMenu={() => setScreen('worldselect')} />}
+      {screen === 'cristiantree'  && (
+        <CristianTreeScene
+          firstVisit={!farmVisited}
+          onCinematicEnd={() => { setFarmVisited(true); setWorldPhase(2); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'Cristian a dispărut din CRISTIAN_FARM!', color: '#ff8888' }) }}
+          onMenu={() => setScreen('worldselect')}
+          onComplete={() => setScreen('worldselect')}
+        />
+      )}
+      {screen === 'worldselect'   && (
+        <WorldSelector
+          phase={worldPhase}
+          extraLog={extraLog}
+          onBack={() => setScreen('title')}
+          onEnterWorld={enterWorld}
+        />
+      )}
       {titleVisible && <TitleScreen onPlay={handlePlay} splitting={splitting} />}
     </div>
   )

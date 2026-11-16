@@ -49,7 +49,7 @@ const TREE_NAME = {
   [STAGE.LETTER_OPEN]:    null
 }
 
-export default function GameScene() {
+export default function GameScene({ fromParkour = false }) {
   const [layout, setLayout] = useState(() =>
     computeLayout(typeof window !== 'undefined' ? window.innerWidth : 1280))
 
@@ -87,6 +87,9 @@ export default function GameScene() {
   const [showLetterModal, setShowLetterModal] = useState(false)
   const [showFireworks,   setShowFireworks]   = useState(false)
   const [showLove,        setShowLove]        = useState(false)
+  const [cristianSpeech,  setCristianSpeech]  = useState(
+    fromParkour ? 'Vrăjitorul mi-a furat sămânța... Cadoul tău e stricat 😔' : null
+  )
   const [punchSwing,      setPunchSwing]      = useState(false)
   const [punchOffset,     setPunchOffset]     = useState(0)
   const [masterVolume,    setMasterVolume]    = useState(1)
@@ -258,6 +261,10 @@ export default function GameScene() {
     }
     setHasSeed(false)
     setStage(STAGE.PUNCH)
+    if (fromParkour) {
+      setCristianSpeech('Ai recuperat-o!! Mulțumesc, Carlita! 🎉')
+      setTimeout(() => setCristianSpeech(null), 3500)
+    }
     playSfx('/sounds/tree-splice.mp3', { volume: 0.8 })
   }
 
@@ -506,7 +513,9 @@ x={carlitaX}
         />
 
         {/* Te iubesc speech bubble */}
-        {showLove && <SpeechBubble x={layout.cristianX} text="Te iubesc ♥" />}
+        {(cristianSpeech || showLove) && (
+          <SpeechBubble x={layout.cristianX} text={cristianSpeech ?? "Te iubesc ♥"} />
+        )}
       </div>
 
       {/* Action menu (Growtopia-style hotbar) */}
