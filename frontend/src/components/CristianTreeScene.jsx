@@ -34,6 +34,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const [step,          setStep]          = useState(0)
   const [msgChars,      setMsgChars]      = useState(0)
   const [crisChars,     setCrisChars]     = useState(0)
+  const [gangstaVisible, setGangstaVisible] = useState(false)
   const onCinematicEndRef = useRef(onCinematicEnd)
   const crisDialogTsRef   = useRef(null)
   const wizNotifTsRef     = useRef(null)
@@ -84,6 +85,21 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     a.play().catch(() => {})
     battleAudioRef.current = a
     return () => { a.pause(); a.src = '' }
+  }, [phase])
+
+  // Gangsta wizard flash on steal: fade-in image, play scrape, duck tiki_tiki
+  useEffect(() => {
+    if (phase !== 'steal') return
+    setGangstaVisible(true)
+    const hide = setTimeout(() => setGangstaVisible(false), 2000)
+    const scrape = new Audio('/sounds/concrete_scrape.mp3')
+    scrape.volume = getMasterVolume()
+    if (battleAudioRef.current) battleAudioRef.current.volume = getMasterVolume() * 0.15
+    scrape.addEventListener('ended', () => {
+      if (battleAudioRef.current) battleAudioRef.current.volume = getMasterVolume()
+    })
+    scrape.play().catch(() => {})
+    return () => { clearTimeout(hide); scrape.pause(); scrape.src = ''; if (battleAudioRef.current) battleAudioRef.current.volume = getMasterVolume() }
   }, [phase])
 
   // Cristian message typing
@@ -326,6 +342,11 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       />
       {chars}
       {screenOverlay}
+      {gangstaVisible && (
+        <div style={{ position:'fixed', inset:0, zIndex:55, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', animation:'gangstaFade 2s ease-in-out forwards' }}>
+          <img src="/sprites/gangsta_wizard.png" alt="" style={{ maxWidth:'70%', maxHeight:'80%', objectFit:'contain' }} />
+        </div>
+      )}
     </div>
   )
 }

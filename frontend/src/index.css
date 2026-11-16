@@ -278,6 +278,14 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   50%       { transform: translateY(-25%); }
 }
 
+/* Gangsta wizard: fade in 0.5s, hold 1s, fade out 0.5s */
+@keyframes gangstaFade {
+  0%   { opacity: 0; }
+  25%  { opacity: 1; }
+  75%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* CristianTreeScene cinematic */
 @keyframes joinsBattle {
   from { transform: scale(0) rotate(-8deg); opacity: 0; }
@@ -294,6 +302,18 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
 @keyframes stealFlash {
   0%   { opacity: 0.55; }
   100% { opacity: 0;    }
+}
+
+/* Growtopia death: soul rises upward and fades */
+@keyframes soulRise {
+  0%   { transform: translateY(0);       opacity: 0.9; }
+  100% { transform: translateY(-130px);  opacity: 0;   }
+}
+/* Growtopia death: player shrinks and fades at death spot */
+@keyframes playerDie {
+  0%   { opacity: 1;   transform: scale(1);    }
+  20%  { opacity: 0.9; transform: scale(1.06); }
+  100% { opacity: 0;   transform: scale(0);    }
 }
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateX(-50%) translateY(16px); }
