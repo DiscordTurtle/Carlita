@@ -33,10 +33,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const [step,          setStep]          = useState(0)
   const [msgChars,      setMsgChars]      = useState(0)
   const [crisChars,     setCrisChars]     = useState(0)
-  const [chatLog,       setChatLog]       = useState([])
-  const [chatH,         setChatH]         = useState(0)
-  const dragStartY = useRef(0)
-  const dragStartH = useRef(0)
   const onCinematicEndRef = useRef(onCinematicEnd)
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
@@ -107,44 +103,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     const t = setTimeout(() => setMsgChars(n => n + 1), 40)
     return () => clearTimeout(t)
   }, [phase, msgChars])
-
-  // Chatbox: open + add Cristian entry when his dialog starts
-  useEffect(() => {
-    if (phase !== 'cristian_dialog') return
-    setChatLog([{ id: 'cris', text: '' }])
-    setChatH(h => Math.max(h, 62))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase === 'cristian_dialog'])
-
-  // Chatbox: add wizard entry when notification starts
-  useEffect(() => {
-    if (phase !== 'notification') return
-    setChatLog(prev => [...prev, { id: 'wiz', text: '', ts: new Date().toTimeString().slice(0, 8) }])
-    setChatH(h => Math.max(h, 62))
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase === 'notification'])
-
-  // Chatbox: live-update Cristian's text as it types
-  useEffect(() => {
-    if (phase !== 'cristian_dialog' || crisChars === 0) return
-    setChatLog(prev => prev.map(e => e.id === 'cris' ? { ...e, text: CRISTIAN_MSG.slice(0, crisChars) } : e))
-  }, [crisChars])
-
-  // Chatbox: live-update wizard's text as it types
-  useEffect(() => {
-    if (msgChars === 0) return
-    setChatLog(prev => prev.map(e => e.id === 'wiz' ? { ...e, text: WIZARD_MSG.slice(0, msgChars) } : e))
-  }, [msgChars])
-
-  function handleDragStart(e) {
-    dragStartY.current = e.clientY
-    dragStartH.current = chatH
-    e.currentTarget.setPointerCapture(e.pointerId)
-  }
-  function handleDragMove(e) {
-    if (!e.buttons) return
-    setChatH(Math.max(0, Math.min(320, dragStartH.current + (e.clientY - dragStartY.current))))
-  }
 
   // RAF: positions characters using DT from window.__gCam (handles any tileScale)
   useEffect(() => {
@@ -307,53 +265,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     </div>
   ) : null
 
-  const chatbox = !cinematicDone ? (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 48, pointerEvents: 'none' }}>
-      {chatH > 0 && (
-        <div style={{
-          height: chatH, overflowY: 'auto',
-          background: 'rgba(0,0,0,0.80)',
-          padding: '5px 10px 2px',
-          display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 2,
-          fontFamily: 'monospace', fontSize: 12.5, lineHeight: 1.6,
-        }}>
-          {chatLog.map((entry, i) => {
-            const isLast = i === chatLog.length - 1
-            if (entry.id === 'cris') return (
-              <div key="cris" style={{ color: '#e0d8ff' }}>
-                <span style={{ color: '#f0c060' }}>[Cristian]</span>
-                {' '}{entry.text}
-                {isLast && entry.text.length < CRISTIAN_MSG.length && <span style={{ opacity: 0.4 }}>|</span>}
-              </div>
-            )
-            if (entry.id === 'wiz') return (
-              <div key="wiz" style={{ display: 'flex', flexWrap: 'wrap', columnGap: 5, color: '#ffa0a0' }}>
-                <span style={{ color: '#c060ff', flexShrink: 0 }}>[◉][{entry.ts}]</span>
-                <span style={{ color: '#ff9090', fontWeight: 700, flexShrink: 0 }}>** from (EvilWizard) in [WIZARDWORLD] ** :</span>
-                <span>
-                  {entry.text}
-                  {isLast && entry.text.length < WIZARD_MSG.length && <span style={{ opacity: 0.4 }}>|</span>}
-                </span>
-              </div>
-            )
-            return null
-          })}
-        </div>
-      )}
-      <div
-        onPointerDown={handleDragStart}
-        onPointerMove={handleDragMove}
-        style={{
-          height: 18, background: 'rgba(0,0,0,0.65)', borderBottom: '2px solid rgba(144,64,192,0.45)',
-          cursor: 'ns-resize', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          pointerEvents: 'all', userSelect: 'none',
-        }}
-      >
-        <div style={{ width: 36, height: 3, background: 'rgba(192,96,255,0.55)', borderRadius: 99 }} />
-      </div>
-    </div>
-  ) : null
-
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <GridWorld
@@ -363,7 +274,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       />
       {chars}
       {screenOverlay}
-      {chatbox}
     </div>
   )
 }

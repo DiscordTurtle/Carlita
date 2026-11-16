@@ -39,21 +39,8 @@ const PHASES = {
   },
 }
 
-const BASE_LOG = [
-  { t:'07:24:58', msg:'Where would you like to go? (59,342 online)' },
-  { t:'07:41:23', msg:'Where would you like to go? (61,861 online)' },
-  { t:'07:41:28', msg:'Logging on ...' },
-  { t:'07:43:48', msg:'Where would you like to go? (61,004 online)' },
-  { t:'07:48:17', msg:"You haven't set a home world yet!" },
-]
-
 const TOP_WORLDS    = ['START', 'BFN', 'GROW', 'FARM', 'BFNLOL']
 const RECENT_WORLDS = ['CRISTIAN_FARM', 'BDAY23', 'P4rkour', 'FLOWERS', 'PARTY', 'TEST', 'LOVE', 'START']
-
-function timestamp() {
-  const d = new Date()
-  return [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':')
-}
 
 function SceneBG({ grid }) {
   if (!grid?.length) return null
@@ -104,21 +91,17 @@ function WorldPill({ name, variant = 'recent', onClick, glow = false }) {
   )
 }
 
-export default function WorldSelector({ onBack, onEnterWorld, phase = 1, extraLog = [] }) {
+export default function WorldSelector({ onBack, onEnterWorld, phase = 1 }) {
   const pd = PHASES[phase] || PHASES[1]
 
   const [scene,    setScene]    = useState(null)
-  const [msgChars, setMsgChars] = useState(0)
   const [selected, setSelected] = useState(pd.realWorld)
-  const [ts]                    = useState(timestamp)
-  const logRef = useRef(null)
 
-  // Reset typing and selected when phase changes
+  // Reset selected when phase changes
   const prevPhase = useRef(phase)
   useEffect(() => {
     if (prevPhase.current !== phase) {
       prevPhase.current = phase
-      setMsgChars(0)
       setSelected(PHASES[phase]?.realWorld ?? selected)
     }
   }, [phase])
@@ -127,22 +110,6 @@ export default function WorldSelector({ onBack, onEnterWorld, phase = 1, extraLo
   useEffect(() => {
     fetch('/scenes/world-picker.json').then(r => r.json()).then(d => setScene(d.grid)).catch(() => {})
   }, [])
-
-  // Type in the phase whisper
-  const fullMsg = `** from (${pd.msgSender}) in [${pd.msgWorld}] ** : ${pd.msgText}`
-  useEffect(() => {
-    if (msgChars >= fullMsg.length) return
-    const delay = msgChars === 0 ? 900 : 35
-    const id = setTimeout(() => setMsgChars(n => n + 1), delay)
-    return () => clearTimeout(id)
-  }, [msgChars, fullMsg.length])
-
-  // Auto-scroll chat to bottom when new content appears
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight
-  }, [msgChars, extraLog.length])
-
-  const isWizard = pd.msgSender === 'EvilWizard'
 
   function enter() {
     onEnterWorld?.(selected)
@@ -159,25 +126,6 @@ export default function WorldSelector({ onBack, onEnterWorld, phase = 1, extraLo
       <SceneBG grid={scene} />
       {/* Tint overlay targeting #0C2D3B */}
       <div style={{ position:'absolute', inset:0, background:'rgba(10,40,58,0.82)', pointerEvents:'none' }} />
-
-      {/* ── Chat log ── */}
-      <div ref={logRef} style={{ position:'relative', zIndex:10, margin:'10px 12px 0', background:'rgba(2,10,22,0.93)', border:'2px solid #1a5878', borderRadius:3, padding:'5px 10px', fontSize:12.5, lineHeight:1.8, color:'#9ac0de', maxHeight:180, overflowY:'auto' }}>
-        {[...BASE_LOG, ...extraLog].map(({ t, msg, color }, i) => (
-          <div key={i} style={{ display:'flex', gap:6, alignItems:'center' }}>
-            <span style={{ color:'#4a88b8', fontSize:14, flexShrink:0 }}>ⓘ</span>
-            <span style={{ color: color || undefined }}>[{t}] {msg}</span>
-          </div>
-        ))}
-        {msgChars > 0 && (
-          <div style={{ display:'flex', gap:6, alignItems:'flex-start' }}>
-            <span style={{ color: isWizard ? '#c060ff' : '#4a88b8', fontSize:14, flexShrink:0 }}>ⓘ</span>
-            <span style={{ color: pd.msgColor }}>
-              [{ts}] {fullMsg.slice(0, msgChars)}
-              {msgChars < fullMsg.length && <span style={{ opacity:0.4 }}>|</span>}
-            </span>
-          </div>
-        )}
-      </div>
 
       {/* ── World Name ── */}
       <div style={{ position:'relative', zIndex:10, padding:'10px 14px 4px' }}>
