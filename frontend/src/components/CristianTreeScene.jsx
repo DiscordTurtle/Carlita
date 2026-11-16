@@ -39,6 +39,8 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const crisDialogTsRef   = useRef(null)
   const wizNotifTsRef     = useRef(null)
   const battleAudioRef    = useRef(null)
+  const battleFadeRef     = useRef(null)
+  const isFadingOutRef    = useRef(false)
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
@@ -69,22 +71,37 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     return () => clearTimeout(t)
   }, [step, phase, cinematicDone])
 
-  // Battle audio: tiki tiki over muted video, fades in last 4 s
+  // Battle audio: tiki tiki over muted video, fades in last 4 s of song,
+  // then continues 10 s after video ends with a linear fade-out
   useEffect(() => {
-    if (phase !== 'battle') {
-      if (battleAudioRef.current) { battleAudioRef.current.pause(); battleAudioRef.current.src = ''; battleAudioRef.current = null }
-      return
-    }
+    if (phase !== 'battle') return
+    if (battleFadeRef.current) { clearInterval(battleFadeRef.current); battleFadeRef.current = null }
+    isFadingOutRef.current = false
     const a = new Audio('/sounds/tiki_tiki.mp3')
     a.volume = getMasterVolume()
     a.addEventListener('timeupdate', () => {
-      if (!a.duration) return
+      if (!a.duration || isFadingOutRef.current) return
       const remaining = a.duration - a.currentTime
       if (remaining < 4) a.volume = Math.max(0, (remaining / 4) * getMasterVolume())
     })
     a.play().catch(() => {})
     battleAudioRef.current = a
-    return () => { a.pause(); a.src = '' }
+    return () => {
+      // Phase left 'battle': keep playing but fade out over 10 s
+      const startVol = a.volume
+      const startTime = Date.now()
+      isFadingOutRef.current = true
+      battleFadeRef.current = setInterval(() => {
+        const progress = Math.min(1, (Date.now() - startTime) / 10000)
+        a.volume = Math.max(0, startVol * (1 - progress))
+        if (progress >= 1) {
+          a.pause(); a.src = ''
+          battleAudioRef.current = null
+          isFadingOutRef.current = false
+          clearInterval(battleFadeRef.current); battleFadeRef.current = null
+        }
+      }, 100)
+    }
   }, [phase])
 
   // Gangsta wizard flash on steal: fade-in image, play scrape, duck tiki_tiki
@@ -94,12 +111,12 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     const hide = setTimeout(() => setGangstaVisible(false), 2000)
     const scrape = new Audio('/sounds/concrete_scrape.mp3')
     scrape.volume = getMasterVolume()
-    if (battleAudioRef.current) battleAudioRef.current.volume = getMasterVolume() * 0.15
+    if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() * 0.15
     scrape.addEventListener('ended', () => {
-      if (battleAudioRef.current) battleAudioRef.current.volume = getMasterVolume()
+      if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume()
     })
     scrape.play().catch(() => {})
-    return () => { clearTimeout(hide); scrape.pause(); scrape.src = ''; if (battleAudioRef.current) battleAudioRef.current.volume = getMasterVolume() }
+    return () => { clearTimeout(hide); scrape.pause(); scrape.src = ''; if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() }
   }, [phase])
 
   // Cristian message typing
