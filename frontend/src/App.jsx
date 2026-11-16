@@ -32,19 +32,32 @@ export default function App() {
   const [farmVisited,      setFarmVisited]      = useState(false)
   const [chatH,            setChatH]            = useState(0)
   const [typingChars,      setTypingChars]      = useState(0)
-  const chatTypingTsRef  = useRef(null)
-  const chatLogRef       = useRef(null)
-  const chatDragStartY   = useRef(0)
-  const chatDragStartH   = useRef(0)
+  const [liveChat,         setLiveChat]         = useState(null)
+  const chatTypingTsRef    = useRef(null)
+  const whisperDoneRef     = useRef(false)
+  const chatLogRef         = useRef(null)
+  const chatDragStartY     = useRef(0)
+  const chatDragStartH     = useRef(0)
   const audioRef = useRef(null)
 
   function addLog(entry) {
     setExtraLog(prev => [...prev, entry])
   }
 
+  // Called by CristianTreeScene for live-typed player/PM messages
+  function onChatMsg({ t, msg, color, icon, done, commit = true }) {
+    if (done) {
+      if (msg && commit) addLog({ t, msg, color })
+      setLiveChat(null)
+    } else {
+      setLiveChat({ t, msg, color, icon })
+    }
+  }
+
   // Start typing the phase whisper when worldPhase changes
   useEffect(() => {
     chatTypingTsRef.current = new Date().toTimeString().slice(0, 8)
+    whisperDoneRef.current = false
     setTypingChars(0)
     setChatH(h => Math.max(h, 62))
   }, [worldPhase])
@@ -59,10 +72,17 @@ export default function App() {
     return () => clearTimeout(id)
   }, [typingChars, fullWhisper.length])
 
+  // Commit whisper to extraLog when it finishes typing (so it persists across phase changes)
+  useEffect(() => {
+    if (whisperDoneRef.current || typingChars === 0 || !pw || typingChars < fullWhisper.length) return
+    whisperDoneRef.current = true
+    addLog({ t: chatTypingTsRef.current || '00:00:00', msg: `** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}`, color: pw.color })
+  }, [typingChars])
+
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (chatLogRef.current) chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight
-  }, [extraLog.length, typingChars])
+  }, [extraLog.length, typingChars, liveChat?.msg])
 
   function handleChatDragStart(e) {
     chatDragStartY.current = e.clientY
@@ -130,12 +150,21 @@ export default function App() {
               <span style={{ color: color || undefined }}>[{t}] {msg}</span>
             </div>
           ))}
-          {typingChars > 0 && pw && (
+          {typingChars > 0 && pw && typingChars < fullWhisper.length && (
             <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
               <span style={{ color: pw.icon, fontSize: 14, flexShrink: 0 }}>ⓘ</span>
               <span style={{ color: pw.color }}>
                 {fullWhisper.slice(0, typingChars)}
-                {typingChars < fullWhisper.length && <span style={{ opacity: 0.4 }}>|</span>}
+                <span style={{ opacity: 0.4 }}>|</span>
+              </span>
+            </div>
+          )}
+          {liveChat && (
+            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+              <span style={{ color: liveChat.icon, fontSize: 14, flexShrink: 0 }}>ⓘ</span>
+              <span style={{ color: liveChat.color }}>
+                [{liveChat.t}] {liveChat.msg}
+                <span style={{ opacity: 0.4 }}>|</span>
               </span>
             </div>
           )}
@@ -161,6 +190,7 @@ export default function App() {
           onCinematicEnd={() => { setFarmVisited(true); setWorldPhase(2); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'Cristian a dispărut din CRISTIAN_FARM!', color: '#ff8888' }) }}
           onMenu={() => setScreen('worldselect')}
           onComplete={() => setScreen('worldselect')}
+          onChatMsg={onChatMsg}
         />
       )}
       {screen === 'worldselect'   && (

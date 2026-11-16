@@ -28,12 +28,14 @@ const WIZ_START_ROW = -4
 const WIZ_END_COL   = 42   // lands beside Cristian
 const WIZ_END_ROW   = GROUND_ROW - WIZARD_H_TILES
 
-export default function CristianTreeScene({ onComplete, onMenu, firstVisit = true, onCinematicEnd }) {
+export default function CristianTreeScene({ onComplete, onMenu, firstVisit = true, onCinematicEnd, onChatMsg }) {
   const [cinematicDone, setCinematicDone] = useState(!firstVisit)
   const [step,          setStep]          = useState(0)
   const [msgChars,      setMsgChars]      = useState(0)
   const [crisChars,     setCrisChars]     = useState(0)
   const onCinematicEndRef = useRef(onCinematicEnd)
+  const crisDialogTsRef   = useRef(null)
+  const wizNotifTsRef     = useRef(null)
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
@@ -102,6 +104,38 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     if (msgChars >= WIZARD_MSG.length) return
     const t = setTimeout(() => setMsgChars(n => n + 1), 40)
     return () => clearTimeout(t)
+  }, [phase, msgChars])
+
+  // Report Cristian's dialog live to the persistent chat bar
+  useEffect(() => {
+    if (phase === 'cristian_dialog') {
+      if (!crisDialogTsRef.current) crisDialogTsRef.current = new Date().toTimeString().slice(0, 8)
+      if (crisChars === 0) return
+      onChatMsg?.({
+        t: crisDialogTsRef.current, msg: `[Cristian]: ${CRISTIAN_MSG.slice(0, crisChars)}`,
+        color: '#f0c060', icon: '#4a88b8',
+        done: crisChars >= CRISTIAN_MSG.length, commit: true,
+      })
+    } else if (crisDialogTsRef.current) {
+      onChatMsg?.({ t: crisDialogTsRef.current, msg: `[Cristian]: ${CRISTIAN_MSG.slice(0, crisChars)}`, color: '#f0c060', icon: '#4a88b8', done: true, commit: crisChars >= CRISTIAN_MSG.length })
+      crisDialogTsRef.current = null
+    }
+  }, [phase, crisChars])
+
+  // Report wizard's PM live to the persistent chat bar (transient — phase 2 whisper commits it on worldselect)
+  useEffect(() => {
+    if (phase === 'notification' || phase === 'leave') {
+      if (!wizNotifTsRef.current) wizNotifTsRef.current = new Date().toTimeString().slice(0, 8)
+      if (msgChars === 0) return
+      onChatMsg?.({
+        t: wizNotifTsRef.current, msg: `** from (EvilWizard) in [WIZARDWORLD] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
+        color: '#ff9090', icon: '#c060ff',
+        done: msgChars >= WIZARD_MSG.length, commit: false,
+      })
+    } else if (wizNotifTsRef.current) {
+      onChatMsg?.({ done: true, commit: false })
+      wizNotifTsRef.current = null
+    }
   }, [phase, msgChars])
 
   // RAF: positions characters using DT from window.__gCam (handles any tileScale)
