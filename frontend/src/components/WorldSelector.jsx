@@ -24,7 +24,7 @@ const PHASES = {
   2: {
     realWorld: 'P4rkour',
     myWorlds:  ['P4rkour', 'CRISTIAN_FARM', 'BDAY23'],
-    msgSender: 'EvilWizard',
+    msgSender: 'XxRapeWizardxX',
     msgWorld:  'WIZARDWORLD',
     msgText:   "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!",
     msgColor:  '#ff8888',

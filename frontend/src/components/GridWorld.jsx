@@ -16,7 +16,7 @@ const MAX_HP        = 5
 const IFRAMES       = 90   // ~1.5 s invincibility after lava hit
 const LAVA_KBX      = 7
 const LAVA_KBY      = 12
-const DEATH_FRAMES  = 80   // ~1.3 s death animation
+const DEATH_FRAMES  = 36   // 0.6 s — soul rise + fade
 
 const DEFAULT_SCALE = () => window.innerWidth / (15 * TILE)
 const MIN_SCALE     = 0.8
@@ -141,7 +141,8 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
   const deathFrameRef = useRef(0)
   const doneRef       = useRef(false)
 
-  const [dying, setDying] = useState(false)
+  const [dying,        setDying]        = useState(false)
+  const [deathAnimKey, setDeathAnimKey] = useState(0)
 
   // Load scene
   useEffect(() => {
@@ -262,8 +263,10 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
     dyingRef.current      = true
     deathFrameRef.current = DEATH_FRAMES
     hpRef.current         = 0
+    vyRef.current         = 0  // freeze vertical movement
     setHp(0)
     setDying(true)
+    setDeathAnimKey(k => k + 1)
     playSfx('/sounds/punch-hit.wav', { volume: 0.9 })
   }
 
@@ -288,11 +291,9 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
     const loop = () => {
       if (doneRef.current) return
 
-      // — Death animation —
+      // — Death animation (player frozen; soul + shrink handled via CSS) —
       if (dyingRef.current) {
         deathFrameRef.current--
-        vyRef.current  = Math.min(vyRef.current + GRAVITY * 0.4, 4)
-        pyRef.current += vyRef.current
         if (deathFrameRef.current <= 0) {
           dyingRef.current = false
           setDying(false)
@@ -522,40 +523,65 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
       <div style={{ position:'absolute', top:0, left:0, transform:`translate(${-camX}px,${-camY}px)`, willChange:'transform' }}>
         {tileEls}
 
-        {/* Name label — centered above sprite */}
-        <div style={{
-          position:'absolute',
-          left: dispPX + dispPW / 2,
-          top:  dispPY + dispPH - spriteDispH - 20,
-          transform:'translateX(-50%)',
-          whiteSpace:'nowrap', pointerEvents:'none', zIndex:21,
-        }}>
-          <span className="legend-name" style={{ fontSize: 12 }}>Carlita of Legend</span>
-        </div>
+        {/* Name label — hidden while dying */}
+        {!dying && (
+          <div style={{
+            position:'absolute',
+            left: dispPX + dispPW / 2,
+            top:  dispPY + dispPH - spriteDispH - 20,
+            transform:'translateX(-50%)',
+            whiteSpace:'nowrap', pointerEvents:'none', zIndex:21,
+          }}>
+            <span className="legend-name" style={{ fontSize: 12 }}>Carlita of Legend</span>
+          </div>
+        )}
 
         {/* Sprite — bottom anchored to hitbox bottom */}
         <div style={{
           position:'absolute',
           left: dispPX + dispPW / 2,
-          top:  dispPY + dispPH,  // hitbox bottom
+          top:  dispPY + dispPH,
           transform:`translateX(-50%) translateY(-100%) scaleX(${flip})`,
           transformOrigin:'bottom center',
           pointerEvents:'none', zIndex:20,
         }}>
-          <img
-            src="/sprites/carlita.png"
-            alt="Carlita"
-            draggable={false}
-            className="pixel"
-            style={{
-              height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
-              filter: dying
-                ? (deathFrameRef.current % 6 < 3
-                    ? 'brightness(3) sepia(1) saturate(10) hue-rotate(315deg) opacity(0.8)'
-                    : 'brightness(0.3) saturate(0) opacity(0.6)')
-                : (lavHit ? 'brightness(3) sepia(1) saturate(20) hue-rotate(315deg)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))'),
-            }}
-          />
+          {/* Relative wrapper so soul can overlay the sprite */}
+          <div style={{ position:'relative', display:'inline-block' }}>
+            <img
+              src="/sprites/carlita.png"
+              alt="Carlita"
+              draggable={false}
+              className="pixel"
+              style={{
+                height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
+                filter: dying ? 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' : (lavHit ? 'brightness(3) sepia(1) saturate(20) hue-rotate(315deg)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))'),
+                animation: dying ? 'playerDie 0.6s ease-in forwards' : undefined,
+              }}
+            />
+            {/* Soul — white ghost that rises and fades on death */}
+            {dying && (
+              <img
+                key={deathAnimKey}
+                src="/sprites/carlita.png"
+                draggable={false}
+                className="pixel"
+                style={{
+                  position:'absolute', top:0, left:0,
+                  height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
+                  filter: 'brightness(8) saturate(0) blur(1px)',
+                  animation: 'soulRise 0.6s ease-out forwards',
+                  pointerEvents:'none',
+                }}
+              />
+            )}
+          </div>
+        </div>
+        {/* Wizard NPC — stands at col 58, ground row 14 */}
+        <div style={{ position:'absolute', left: 58*DT + DT/2, top: 14*DT - spriteDispH - 20, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
+          <span style={{ fontSize: 11, color: '#c090ff', fontWeight: 700, textShadow: '1px 1px 0 #000,-1px 1px 0 #000', fontFamily: '"Century Gothic",sans-serif' }}>XxRapeWizardxX</span>
+        </div>
+        <div style={{ position:'absolute', left: 58*DT + DT/2, top: 14*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20 }}>
+          <img src="/sprites/blocks/all/legendary_wizard.png" alt="" className="pixel" style={{ height: spriteDispH, width:'auto', maxWidth:'none', display:'block', filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' }} />
         </div>
       </div>
 

@@ -126,7 +126,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       if (!wizNotifTsRef.current) wizNotifTsRef.current = new Date().toTimeString().slice(0, 8)
       if (msgChars === 0) return
       onChatMsg?.({
-        t: wizNotifTsRef.current, msg: `** from (EvilWizard) in [P4rkour] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
+        t: wizNotifTsRef.current, msg: `** from (XxRapeWizardxX) in [P4rkour] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
         color: '#ff9090', icon: '#c060ff',
         done: msgChars >= WIZARD_MSG.length, commit: false,
       })
@@ -269,7 +269,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
       {/* Wizard — positioned by RAF */}
       <div ref={wizRef} style={{ position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: 25, textAlign: 'center', transition: 'opacity 0.8s ease-out' }}>
-        <div style={{ fontSize: 11, color: '#c090ff', marginBottom: 2, fontWeight: 700, whiteSpace: 'nowrap', textShadow: '1px 1px 0 #000,-1px 1px 0 #000', fontFamily: '"Century Gothic",sans-serif' }}>EvilWizard</div>
+        <div style={{ fontSize: 11, color: '#c090ff', marginBottom: 2, fontWeight: 700, whiteSpace: 'nowrap', textShadow: '1px 1px 0 #000,-1px 1px 0 #000', fontFamily: '"Century Gothic",sans-serif' }}>XxRapeWizardxX</div>
         <img src={WIZARD_SPR} alt="Wizard" style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block' }} />
       </div>
     </>

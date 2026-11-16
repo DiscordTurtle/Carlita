@@ -19,8 +19,8 @@ const BASE_LOG = [
 
 const PHASE_WHISPERS = {
   1: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Heyyy! La multi ani!! Vino să mă vizitezi în CRISTIAN_FARM! 🌳",                     color: '#f0c060', icon: '#4a88b8' },
-  2: { sender: 'EvilWizard', world: 'P4rkour',       text: "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!", color: '#ff9090', icon: '#c060ff',
-       followUp: { sender: 'EvilWizard', world: 'JAMMED', text: "Ah, am uitat sa activez Jammerul de ultima oara cand am tinut drop game... TOT NU MA VEI GASI NICIODATA!", color: '#ff9090', icon: '#c060ff' } },
+  2: { sender: 'XxRapeWizardxX', world: 'P4rkour',       text: "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!", color: '#ff9090', icon: '#c060ff',
+       followUp: { sender: 'XxRapeWizardxX', world: 'JAMMED', text: "Ah, am uitat sa activez Jammerul de ultima oara cand am tinut drop game... TOT NU MA VEI GASI NICIODATA!", color: '#ff9090', icon: '#c060ff' } },
   3: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Vino să te întâlnești cu mine în CRISTIAN_FARM! Voiam să-ți arăt ceva special ♥",    color: '#f0c060', icon: '#4a88b8' },
 }
 
