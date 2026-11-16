@@ -4,7 +4,7 @@ import { getMasterVolume } from '../useAudio.js'
 
 const WIZARD_SPR   = '/sprites/blocks/all/legendary_wizard.png'
 const CRISTIAN_SPR = '/sprites/cristian.png'
-const WIZARD_MSG   = "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!"
+const WIZARD_MSG   = "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Nu ma vei gasi niciodata!!! MUAAHAHAHAAHAH"
 const CRISTIAN_MSG = "Heyyy șoricel drag!! 🎉 La mulți ani!! Sunt atât de fericit că ești aici!! ♥"
 
 const STEPS = [
