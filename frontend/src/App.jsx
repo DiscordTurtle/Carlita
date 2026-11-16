@@ -173,7 +173,7 @@ export default function App() {
       <div
         onPointerDown={handleChatDragStart}
         onPointerMove={handleChatDragMove}
-        style={{ height: 18, background: 'rgba(2,10,22,0.85)', borderBottom: '2px solid #1a5878', cursor: 'ns-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'all', userSelect: 'none' }}
+        style={{ height: 18, background: 'rgba(2,10,22,0.85)', borderBottom: '2px solid #1a5878', cursor: screen === 'worldselect' ? 'default' : 'ns-resize', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: screen === 'worldselect' ? 'none' : 'all', userSelect: 'none' }}
       >
         <div style={{ width: 36, height: 3, background: 'rgba(74,136,184,0.6)', borderRadius: 99 }} />
       </div>
