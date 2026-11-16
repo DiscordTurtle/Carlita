@@ -120,7 +120,7 @@ export default function WorldSelector({ onBack, onEnterWorld, phase = 1, chatBar
       position:'absolute', inset:0, overflow:'hidden',
       background:'linear-gradient(180deg,#0a2838 0%,#0d3245 60%,#0f3648 100%)',
       fontFamily:'"Century Gothic",CenturyGothic,Geneva,sans-serif',
-      display:'flex', flexDirection:'column',
+      display:'flex', flexDirection:'column', paddingTop: chatBarH,
     }}>
       {/* Rendered world scene */}
       <SceneBG grid={scene} />
@@ -128,7 +128,7 @@ export default function WorldSelector({ onBack, onEnterWorld, phase = 1, chatBar
       <div style={{ position:'absolute', inset:0, background:'rgba(10,40,58,0.82)', pointerEvents:'none' }} />
 
       {/* ── World Name ── */}
-      <div style={{ position:'relative', zIndex:10, padding:'10px 14px 4px', paddingTop: chatBarH + 10 }}>
+      <div style={{ position:'relative', zIndex:10, padding:'10px 14px 4px' }}>
         <div style={{ color:'#c0d8f0', fontSize:13, textAlign:'center', marginBottom:8 }}>
           Hit Enter or click 'Enter World' to enter this world!
         </div>
