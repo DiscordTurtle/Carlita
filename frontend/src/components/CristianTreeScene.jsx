@@ -126,7 +126,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       if (!wizNotifTsRef.current) wizNotifTsRef.current = new Date().toTimeString().slice(0, 8)
       if (msgChars === 0) return
       onChatMsg?.({
-        t: wizNotifTsRef.current, msg: `** from (EvilWizard) in [WIZARDWORLD] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
+        t: wizNotifTsRef.current, msg: `** from (EvilWizard) in [P4rkour] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
         color: '#ff9090', icon: '#c060ff',
         done: msgChars >= WIZARD_MSG.length, commit: false,
       })

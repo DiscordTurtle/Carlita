@@ -18,8 +18,9 @@ const BASE_LOG = [
 ]
 
 const PHASE_WHISPERS = {
-  1: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Heyyy! La multi ani!! Vino să mă vizitezi în CRISTIAN_FARM! 🌳",                        color: '#f0c060', icon: '#4a88b8' },
-  2: { sender: 'EvilWizard', world: 'WIZARDWORLD',   text: "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!", color: '#ff9090', icon: '#c060ff' },
+  1: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Heyyy! La multi ani!! Vino să mă vizitezi în CRISTIAN_FARM! 🌳",                     color: '#f0c060', icon: '#4a88b8' },
+  2: { sender: 'EvilWizard', world: 'P4rkour',       text: "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Vino în P4rkour dacă îndreznești!", color: '#ff9090', icon: '#c060ff',
+       followUp: { sender: 'EvilWizard', world: 'JAMMED', text: "Ah, am uitat sa activez Jammerul de ultima oara cand am tinut drop game... TOT NU MA VEI GASI NICIODATA!", color: '#ff9090', icon: '#c060ff' } },
   3: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Vino să te întâlnești cu mine în CRISTIAN_FARM! Voiam să-ți arăt ceva special ♥",    color: '#f0c060', icon: '#4a88b8' },
 }
 
@@ -33,8 +34,12 @@ export default function App() {
   const [chatH,            setChatH]            = useState(0)
   const [typingChars,      setTypingChars]      = useState(0)
   const [liveChat,         setLiveChat]         = useState(null)
+  const [whisperCommitted, setWhisperCommitted] = useState(false)
+  const [fuChars,          setFuChars]          = useState(0)
   const chatTypingTsRef    = useRef(null)
   const whisperDoneRef     = useRef(false)
+  const fuTsRef            = useRef(null)
+  const fuDoneRef          = useRef(false)
   const chatLogRef         = useRef(null)
   const chatDragStartY     = useRef(0)
   const chatDragStartH     = useRef(0)
@@ -58,7 +63,11 @@ export default function App() {
   useEffect(() => {
     chatTypingTsRef.current = new Date().toTimeString().slice(0, 8)
     whisperDoneRef.current = false
+    fuTsRef.current = null
+    fuDoneRef.current = false
     setTypingChars(0)
+    setWhisperCommitted(false)
+    setFuChars(0)
     setChatH(h => Math.max(h, 62))
   }, [worldPhase])
 
@@ -77,12 +86,34 @@ export default function App() {
     if (whisperDoneRef.current || typingChars === 0 || !pw || typingChars < fullWhisper.length) return
     whisperDoneRef.current = true
     addLog({ t: chatTypingTsRef.current || '00:00:00', msg: `** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}`, color: pw.color })
+    setWhisperCommitted(true)
   }, [typingChars])
+
+  // Start follow-up message after first whisper commits
+  const fu = pw?.followUp
+  useEffect(() => {
+    if (!whisperCommitted || !fu || fuDoneRef.current) return
+    const id = setTimeout(() => { fuTsRef.current = new Date().toTimeString().slice(0, 8); setFuChars(1) }, 1200)
+    return () => clearTimeout(id)
+  }, [whisperCommitted])
+
+  const fullFu = fu ? `[${fuTsRef.current || '00:00:00'}] ** from (${fu.sender}) in [${fu.world}] ** : ${fu.text}` : ''
+  useEffect(() => {
+    if (!fu || fuDoneRef.current || fuChars === 0 || fuChars >= fullFu.length) return
+    const id = setTimeout(() => setFuChars(n => n + 1), 35)
+    return () => clearTimeout(id)
+  }, [fuChars, fullFu.length])
+
+  useEffect(() => {
+    if (!fu || fuDoneRef.current || fuChars === 0 || fuChars < fullFu.length) return
+    fuDoneRef.current = true
+    addLog({ t: fuTsRef.current || '00:00:00', msg: `** from (${fu.sender}) in [${fu.world}] ** : ${fu.text}`, color: fu.color })
+  }, [fuChars])
 
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (chatLogRef.current) chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight
-  }, [extraLog.length, typingChars, liveChat?.msg])
+  }, [extraLog.length, typingChars, fuChars, liveChat?.msg])
 
   function handleChatDragStart(e) {
     chatDragStartY.current = e.clientY
@@ -155,6 +186,15 @@ export default function App() {
               <span style={{ color: pw.icon, fontSize: 14, flexShrink: 0 }}>ⓘ</span>
               <span style={{ color: pw.color }}>
                 {fullWhisper.slice(0, typingChars)}
+                <span style={{ opacity: 0.4 }}>|</span>
+              </span>
+            </div>
+          )}
+          {fuChars > 0 && fu && fuChars < fullFu.length && (
+            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+              <span style={{ color: fu.icon, fontSize: 14, flexShrink: 0 }}>ⓘ</span>
+              <span style={{ color: fu.color }}>
+                {fullFu.slice(0, fuChars)}
                 <span style={{ opacity: 0.4 }}>|</span>
               </span>
             </div>
