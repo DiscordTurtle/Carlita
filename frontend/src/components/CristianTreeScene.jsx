@@ -111,11 +111,9 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     if (phase === 'cristian_dialog') {
       if (!crisDialogTsRef.current) crisDialogTsRef.current = new Date().toTimeString().slice(0, 8)
       if (crisChars === 0) return
-      onChatMsg?.({
-        t: crisDialogTsRef.current, msg: `[Cristian]: ${CRISTIAN_MSG.slice(0, crisChars)}`,
-        color: '#f0c060', icon: '#4a88b8',
-        done: crisChars >= CRISTIAN_MSG.length, commit: true,
-      })
+      const done = crisChars >= CRISTIAN_MSG.length
+      onChatMsg?.({ t: crisDialogTsRef.current, msg: `[Cristian]: ${CRISTIAN_MSG.slice(0, crisChars)}`, color: '#f0c060', icon: '#4a88b8', done, commit: true })
+      if (done) crisDialogTsRef.current = null
     } else if (crisDialogTsRef.current) {
       onChatMsg?.({ t: crisDialogTsRef.current, msg: `[Cristian]: ${CRISTIAN_MSG.slice(0, crisChars)}`, color: '#f0c060', icon: '#4a88b8', done: true, commit: crisChars >= CRISTIAN_MSG.length })
       crisDialogTsRef.current = null
