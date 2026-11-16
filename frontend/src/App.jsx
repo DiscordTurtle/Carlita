@@ -196,6 +196,7 @@ export default function App() {
       {screen === 'worldselect'   && (
         <WorldSelector
           phase={worldPhase}
+          chatBarH={chatH + 18}
           onBack={() => setScreen('title')}
           onEnterWorld={enterWorld}
         />

@@ -91,7 +91,7 @@ function WorldPill({ name, variant = 'recent', onClick, glow = false }) {
   )
 }
 
-export default function WorldSelector({ onBack, onEnterWorld, phase = 1 }) {
+export default function WorldSelector({ onBack, onEnterWorld, phase = 1, chatBarH = 18 }) {
   const pd = PHASES[phase] || PHASES[1]
 
   const [scene,    setScene]    = useState(null)
@@ -128,7 +128,7 @@ export default function WorldSelector({ onBack, onEnterWorld, phase = 1 }) {
       <div style={{ position:'absolute', inset:0, background:'rgba(10,40,58,0.82)', pointerEvents:'none' }} />
 
       {/* ── World Name ── */}
-      <div style={{ position:'relative', zIndex:10, padding:'10px 14px 4px' }}>
+      <div style={{ position:'relative', zIndex:10, padding:'10px 14px 4px', paddingTop: chatBarH + 10 }}>
         <div style={{ color:'#c0d8f0', fontSize:13, textAlign:'center', marginBottom:8 }}>
           Hit Enter or click 'Enter World' to enter this world!
         </div>
