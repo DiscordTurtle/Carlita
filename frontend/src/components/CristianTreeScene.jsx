@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import GridWorld from './GridWorld.jsx'
+import { getMasterVolume } from '../useAudio.js'
 
 const WIZARD_SPR   = '/sprites/blocks/all/legendary_wizard.png'
 const CRISTIAN_SPR = '/sprites/cristian.png'
@@ -36,6 +37,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const onCinematicEndRef = useRef(onCinematicEnd)
   const crisDialogTsRef   = useRef(null)
   const wizNotifTsRef     = useRef(null)
+  const battleAudioRef    = useRef(null)
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
@@ -65,6 +67,24 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     const t = setTimeout(() => setStep(s => s + 1), STEPS[step].ms)
     return () => clearTimeout(t)
   }, [step, phase, cinematicDone])
+
+  // Battle audio: tiki tiki over muted video, fades in last 4 s
+  useEffect(() => {
+    if (phase !== 'battle') {
+      if (battleAudioRef.current) { battleAudioRef.current.pause(); battleAudioRef.current.src = ''; battleAudioRef.current = null }
+      return
+    }
+    const a = new Audio('/sounds/tiki_tiki.mp3')
+    a.volume = getMasterVolume()
+    a.addEventListener('timeupdate', () => {
+      if (!a.duration) return
+      const remaining = a.duration - a.currentTime
+      if (remaining < 4) a.volume = Math.max(0, (remaining / 4) * getMasterVolume())
+    })
+    a.play().catch(() => {})
+    battleAudioRef.current = a
+    return () => { a.pause(); a.src = '' }
+  }, [phase])
 
   // Cristian message typing
   useEffect(() => {
@@ -281,7 +301,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
         <video
           key="battle-video"
           src="/videos/evil_wizard_battle.mp4"
-          autoPlay playsInline
+          autoPlay playsInline muted
           onEnded={() => setStep(s => s + 1)}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
         />
