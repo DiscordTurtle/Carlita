@@ -45,9 +45,10 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
-  const crisRef   = useRef(null)
-  const bubbleRef = useRef(null)
-  const wizRef    = useRef(null)
+  const crisRef     = useRef(null)
+  const bubbleRef   = useRef(null)
+  const wizRef      = useRef(null)
+  const crisDoneRef = useRef(null)  // standing Cristian on second visit
 
   // Wizard animated position in tile space (col, row) — updated by JS lerp
   const wizPosRef      = useRef({ col: WIZ_START_COL, row: WIZ_START_ROW })
@@ -196,7 +197,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
   // RAF: positions characters using DT from window.__gCam (handles any tileScale)
   useEffect(() => {
-    if (cinematicDone) return
     let raf
     function tick() {
       const cam = window.__gCam
@@ -208,9 +208,9 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       const crisDY = (GROUND_ROW - CRIS_H_TILES) * DT
       const crisDispH = CRIS_H_TILES * DT
 
-      // Cristian
+      // Cristian — always visible in phase-3 (cinematicDone), phase-gated in cinematic
       if (crisRef.current) {
-        const show = p !== 'steal' && p !== 'notification' && p !== 'leave' && p !== 'done'
+        const show = cinematicDone || (p !== 'steal' && p !== 'notification' && p !== 'leave' && p !== 'done')
         crisRef.current.style.display = show ? 'block' : 'none'
         if (show) {
           crisRef.current.style.left = `${crisDX - cam.x}px`
@@ -219,6 +219,8 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
           if (img) img.style.height = `${crisDispH}px`
         }
       }
+
+      if (cinematicDone) { raf = requestAnimationFrame(tick); return }
 
       // Speech bubble
       if (bubbleRef.current) {
@@ -289,17 +291,19 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     return () => cancelAnimationFrame(raf)
   }, [cinematicDone])
 
+  // Cristian always rendered; RAF controls visibility
+  const cristianEl = (
+    <div ref={crisRef} style={{ position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: 25, textAlign: 'center' }}>
+      <div style={{ marginBottom: 2, whiteSpace: 'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <span style={{ display:'inline-flex', width:16, height:11, marginRight:4, verticalAlign:'middle', border:'1px solid rgba(0,0,0,0.4)', borderRadius:1, overflow:'hidden', flexShrink:0 }}><span style={{flex:1,background:'#002B7F'}}/><span style={{flex:1,background:'#FCD116'}}/><span style={{flex:1,background:'#CE1126'}}/></span>
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif' }}>Cristian</span>
+      </div>
+      <img src={CRISTIAN_SPR} alt="Cristian" style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block' }} />
+    </div>
+  )
+
   const chars = !cinematicDone ? (
     <>
-      {/* Cristian — positioned by RAF */}
-      <div ref={crisRef} style={{ position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: 25, textAlign: 'center' }}>
-        <div style={{ marginBottom: 2, whiteSpace: 'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <span style={{ display:'inline-flex', width:16, height:11, marginRight:4, verticalAlign:'middle', border:'1px solid rgba(0,0,0,0.4)', borderRadius:1, overflow:'hidden', flexShrink:0 }}><span style={{flex:1,background:'#002B7F'}}/><span style={{flex:1,background:'#FCD116'}}/><span style={{flex:1,background:'#CE1126'}}/></span>
-          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif' }}>Cristian</span>
-        </div>
-        <img src={CRISTIAN_SPR} alt="Cristian" style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block' }} />
-      </div>
-
       {/* Speech bubble */}
       <div ref={bubbleRef} style={{ position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: 26, transform: 'translateX(-50%) translateY(-100%)', background: '#fff', color: '#1a0828', border: '2px solid #aaa', borderRadius: 8, padding: '7px 13px', fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 2px 8px rgba(0,0,0,0.35)', fontFamily: '"Century Gothic",sans-serif' }}>
         <span className="bubble-text"></span>
@@ -362,6 +366,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
         onComplete={onComplete}
         onMenu={onMenu}
       />
+      {cristianEl}
       {chars}
       {screenOverlay}
       <ActionMenu selected="punch" onSelect={() => {}} hasSeed={false} hasLetter={false} />
