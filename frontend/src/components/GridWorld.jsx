@@ -290,21 +290,14 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const py = pyRef.current + PLAYER_H / 2
     const cam = camRef.current || { x: 0, y: 0 }
     const physScale = DT / TILE
-    const cPhysX = (e.clientX + cam.x) / physScale
-    const cPhysY = (e.clientY + cam.y) / physScale
+    // Use getBoundingClientRect so coords work even if the container has an offset
+    const rect = outerRef.current?.getBoundingClientRect() ?? { left: 0, top: 0 }
+    const localX = e.clientX - rect.left
+    const localY = e.clientY - rect.top
+    const cPhysX = (localX + cam.x) / physScale
+    const cPhysY = (localY + cam.y) / physScale
 
-    // Face toward click and trigger punch swing
     facingRef.current = cPhysX > px ? 'right' : 'left'
-    const flip = facingRef.current === 'right' ? 1 : -1
-    const screenCX = px * physScale - cam.x
-    const screenCY = py * physScale - cam.y
-    const sdx = e.clientX - screenCX
-    const sdy = e.clientY - screenCY
-    const dist = Math.min(Math.sqrt(sdx * sdx + sdy * sdy), DT * 2)
-    const angle = Math.atan2(sdy, sdx * flip) * 180 / Math.PI
-    setPunchVec({ angle, dist })
-    setPunchAnim(true)
-    setTimeout(() => { setPunchAnim(false); setPunchVec(null) }, 300)
 
     // Door exit — not range-gated; player must already be standing at the door
     const door = doorRef.current
@@ -328,6 +321,18 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       playSfx('/sounds/punch-miss.wav', { volume: 0.3 })
       return
     }
+
+    // Punch animation — only fires for in-range clicks
+    const flip = facingRef.current === 'right' ? 1 : -1
+    const screenCX = px * physScale - cam.x
+    const screenCY = py * physScale - cam.y
+    const sdx = localX - screenCX
+    const sdy = localY - screenCY
+    const dist = Math.min(Math.sqrt(sdx * sdx + sdy * sdy), DT * 2)
+    const angle = Math.atan2(sdy, sdx * flip) * 180 / Math.PI
+    setPunchVec({ angle, dist })
+    setPunchAnim(true)
+    setTimeout(() => { setPunchAnim(false); setPunchVec(null) }, 300)
 
     // Wizard
     if (!wizDeadRef.current &&
