@@ -320,10 +320,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     // 2-tile Chebyshev range check (Growtopia default punch range)
     const dxTiles = Math.abs(cPhysX - px) / TILE
     const dyTiles = Math.abs(cPhysY - py) / TILE
-    if (dxTiles > 2 || dyTiles > 2) {
-      playSfx('/sounds/punch-miss.wav', { volume: 0.3 })
-      return
-    }
+    if (dxTiles > 2 || dyTiles > 2) return
 
     // Punch animation — only fires for in-range clicks
     const flip = facingRef.current === 'right' ? 1 : -1
