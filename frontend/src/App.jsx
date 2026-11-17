@@ -18,10 +18,10 @@ const BASE_LOG = [
 ]
 
 const PHASE_WHISPERS = {
-  1: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Heyyy! La multi ani!! Vino să mă vizitezi în CRISTIAN_FARM! 🌳",                     color: '#f0c060', icon: '#4a88b8' },
+  1: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Heyyy! La multi ani!!! Ti-am pregatit cadoul de ziua ta, suarec! Te astept aici!",                        color: '#f0c060', icon: '#4a88b8' },
   2: { sender: 'XxRapeWizardxX', world: 'P4rkour',       text: "Hahaha, n-o să-ți mai vezi iubitul niciodată! 😈 Sunt de negăsit!!! MUAAHAHAHAAHAH!", color: '#ff9090', icon: '#c060ff',
        followUp: { sender: 'XxRapeWizardxX', world: 'JAMMED', text: "WTF, am uitat să activez Jammerul de ultima oară când am ținut drop game!... TOT NU MĂ VEI GĂSI NICIODATĂ!", color: '#ff9090', icon: '#c060ff' } },
-  3: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Vino să te întâlnești cu mine în CRISTIAN_FARM! Voiam să-ți arăt ceva special ♥",    color: '#f0c060', icon: '#4a88b8' },
+  3: { sender: 'Cristian',   world: 'CRISTIAN_FARM', text: "Mersi onkey drag ca m-ai salvat! Dar am o alta problema :(. Poti veni te rog la mine?", color: '#f0c060', icon: '#4a88b8' },
 }
 
 export default function App() {
@@ -38,6 +38,7 @@ export default function App() {
   const [fuChars,          setFuChars]          = useState(0)
   const chatTypingTsRef    = useRef(null)
   const whisperDoneRef     = useRef(false)
+  const skipPhase2Ref      = useRef(false)
   const fuTsRef            = useRef(null)
   const fuDoneRef          = useRef(false)
   const chatLogRef         = useRef(null)
@@ -62,20 +63,29 @@ export default function App() {
   // Start typing the phase whisper when worldPhase changes
   useEffect(() => {
     chatTypingTsRef.current = new Date().toTimeString().slice(0, 8)
-    whisperDoneRef.current = false
     fuTsRef.current = null
     fuDoneRef.current = false
-    setTypingChars(0)
-    setWhisperCommitted(false)
     setFuChars(0)
     setChatH(h => Math.max(h, 62))
+    if (skipPhase2Ref.current && worldPhase === 2) {
+      // Wizard message already typed + committed live in CristianTreeScene; skip re-type
+      skipPhase2Ref.current = false
+      whisperDoneRef.current = true
+      setTypingChars(0)
+      setWhisperCommitted(false)
+      setTimeout(() => setWhisperCommitted(true), 200)
+    } else {
+      whisperDoneRef.current = false
+      setTypingChars(0)
+      setWhisperCommitted(false)
+    }
   }, [worldPhase])
 
   // Typewriter effect for phase whisper
   const pw = PHASE_WHISPERS[worldPhase]
   const fullWhisper = pw ? `[${chatTypingTsRef.current || '00:00:00'}] ** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}` : ''
   useEffect(() => {
-    if (typingChars >= fullWhisper.length) return
+    if (whisperDoneRef.current || typingChars >= fullWhisper.length) return
     const delay = typingChars === 0 ? 900 : 35
     const id = setTimeout(() => setTypingChars(n => n + 1), delay)
     return () => clearTimeout(id)
@@ -223,11 +233,11 @@ export default function App() {
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
       {screen === 'game'          && <GameScene fromParkour={hasSeed} />}
-      {screen === 'parkour'       && <GridWorld onComplete={() => { setHasSeed(true); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }} onMenu={() => setScreen('worldselect')} />}
+      {screen === 'parkour'       && <GridWorld onComplete={() => { setHasSeed(true); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }} onMenu={() => setScreen('worldselect')} onChatMsg={onChatMsg} />}
       {screen === 'cristiantree'  && (
         <CristianTreeScene
           firstVisit={!farmVisited}
-          onCinematicEnd={() => { setFarmVisited(true); setWorldPhase(2); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'Cristian a dispărut din CRISTIAN_FARM!', color: '#ff8888' }) }}
+          onCinematicEnd={() => { setFarmVisited(true); skipPhase2Ref.current = true; setWorldPhase(2) }}
           onMenu={() => setScreen('worldselect')}
           onComplete={() => setScreen('worldselect')}
           onChatMsg={onChatMsg}

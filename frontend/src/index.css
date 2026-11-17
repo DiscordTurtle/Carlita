@@ -31,6 +31,27 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
      0 4px 0 #3A1F0C;
 }
 
+@keyframes crisStruggle {
+  0%,100% { transform: rotate(0deg) translateX(0px); }
+  12%     { transform: rotate(-5deg) translateX(-3px); }
+  28%     { transform: rotate(4deg)  translateX(2px);  }
+  45%     { transform: rotate(-6deg) translateX(-2px); }
+  62%     { transform: rotate(3deg)  translateX(3px);  }
+  78%     { transform: rotate(-4deg) translateX(-1px); }
+  90%     { transform: rotate(5deg)  translateX(2px);  }
+}
+
+@keyframes wizDie {
+  0%   { opacity: 1;   transform: scale(1) rotate(0deg);    }
+  25%  { opacity: 1;   transform: scale(1.08) rotate(-12deg); }
+  70%  { opacity: 0.7; transform: scale(0.6) rotate(-55deg); }
+  100% { opacity: 0;   transform: scale(0.1) rotate(-90deg); }
+}
+@keyframes wizHitFlash {
+  0%   { filter: brightness(10) saturate(0); }
+  100% { filter: drop-shadow(-2px 2px 0 rgba(0,0,0,0.5)); }
+}
+
 @keyframes wizExplode {
   0%   { transform: scale(0.05); opacity: 1; }
   60%  { opacity: 1; }
@@ -306,8 +327,8 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
 
 /* Growtopia death: soul rises upward and fades */
 @keyframes soulRise {
-  0%   { transform: translateY(0);       opacity: 0.9; }
-  100% { transform: translateY(-130px);  opacity: 0;   }
+  0%   { transform: translateY(0);      opacity: 0.9; }
+  100% { transform: translateY(-80px);  opacity: 0;   }
 }
 /* Growtopia death: player shrinks and fades at death spot */
 @keyframes playerDie {

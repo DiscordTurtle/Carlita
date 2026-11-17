@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { AUTOTILE, autotileCSS } from '../autotile.js'
 import Character from './Character.jsx'
 import Tree from './Tree.jsx'
 import Seed from './Seed.jsx'
@@ -25,7 +26,7 @@ function computeLayout(w) {
     width:         w,
     carlitaStartX: Math.round(w * 0.10),
     treeX:         Math.round(w * 0.50),
-    cristianX:     Math.round(w * 0.90),
+    cristianX:     Math.round(w * 0.46),
     minX:          60,
     maxX:          w - 60
   }
@@ -96,6 +97,7 @@ export default function GameScene({ fromParkour = false }) {
   const [selectedSlot,    setSelectedSlot]    = useState('seed')
   const [showTreeName,    setShowTreeName]    = useState(false)
   const [menuOpen,        setMenuOpen]        = useState(false)
+  const [farmScene,       setFarmScene]       = useState(null)
 
   // refs for game loop
   const keys       = useRef({ left: false, right: false })
@@ -114,6 +116,10 @@ export default function GameScene({ fromParkour = false }) {
   useEffect(() => { slotRef.current   = selectedSlot }, [selectedSlot])
   useEffect(() => { layoutRef.current = layout }, [layout])
   useEffect(() => { setAudioMasterVolume(masterVolume) }, [masterVolume])
+
+  useEffect(() => {
+    fetch('/scenes/Cristian_Tree.json').then(r => r.json()).then(d => setFarmScene(d.grid)).catch(() => {})
+  }, [])
 
   // Resize handler — recompute layout (and clamp Carlita) on viewport changes.
   useEffect(() => {
@@ -381,6 +387,33 @@ export default function GameScene({ fromParkour = false }) {
           imageRendering: 'pixelated'
         }}
       />
+      {/* Farm world tile background */}
+      {farmScene && farmScene.length > 0 && (() => {
+        const BASE_URL = '/sprites/blocks/all/'
+        const ALL_N = { n:true,s:true,e:true,w:true,nw:true,ne:true,se:true,sw:true }
+        const cols = farmScene[0].length
+        const tileW = window.innerWidth / cols
+        const rows = farmScene.length
+        return (
+          <div style={{ position:'absolute', bottom:0, left:0, right:0, height:rows*tileW, pointerEvents:'none', opacity:0.85 }}>
+            {farmScene.map((row, r) => row.map((cell, c) => {
+              if (!cell?.fg && !cell?.bg) return null
+              const W = Math.ceil(tileW)
+              const tileStyle = (name) => {
+                const at = AUTOTILE[name]
+                if (at) return autotileCSS(at, ALL_N, tileW)
+                return { background:`url(${BASE_URL}${name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat`, imageRendering:'pixelated' }
+              }
+              return (
+                <div key={`${r}-${c}`} style={{ position:'absolute', left:Math.round(c*tileW), top:Math.round(r*tileW), width:W, height:W }}>
+                  {cell.bg && <div style={{ position:'absolute', inset:0, opacity:0.45, ...tileStyle(cell.bg) }} />}
+                  {cell.fg && <div style={{ position:'absolute', inset:0, ...tileStyle(cell.fg) }} />}
+                </div>
+              )
+            }))}
+          </div>
+        )
+      })()}
       {/* sunflower-yellow tint */}
       <div className="absolute inset-0 pointer-events-none"
            style={{ background: 'linear-gradient(180deg, rgba(255,243,196,.30), rgba(247,201,72,.18) 60%, rgba(222,145,29,.28))' }} />

@@ -18,7 +18,7 @@ const PHASES = {
     myWorlds:  ['CRISTIAN_FARM', 'BDAY23', 'FLOWERS'],
     msgSender: 'Cristian',
     msgWorld:  'CRISTIAN_FARM',
-    msgText:   "Heyyy! La multi ani!! Vino să mă vizitezi în CRISTIAN_FARM! 🌳",
+    msgText:   "Heyyy! La multi ani!!! Ti-am pregatit cadoul de ziua ta, suarec! Te astept aici!",
     msgColor:  '#f0c060',
   },
   2: {
@@ -34,7 +34,7 @@ const PHASES = {
     myWorlds:  ['CRISTIAN_FARM', 'P4rkour', 'BDAY23'],
     msgSender: 'Cristian',
     msgWorld:  'CRISTIAN_FARM',
-    msgText:   "Vino să te întâlnești cu mine în CRISTIAN_FARM! Voiam să-ți arăt ceva special ♥",
+    msgText:   "Mersi onkey drag ca m-ai salvat! Dar am o alta problema :(. Poti veni te rog la mine?",
     msgColor:  '#f0c060',
   },
 }

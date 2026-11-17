@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { AUTOTILE, autotileCSS } from '../autotile.js'
 import { getMasterVolume, playSfx, setMasterVolume as setAudioVolume, subscribeToMasterVolume } from '../useAudio.js'
 import GameMenu from './GameMenu.jsx'
+import ActionMenu from './ActionMenu.jsx'
 
 const TILE     = 32   // physics world unit
 const PLAYER_W = 20
@@ -16,7 +17,7 @@ const MAX_HP        = 5
 const IFRAMES       = 90   // ~1.5 s invincibility after lava hit
 const LAVA_KBX      = 7
 const LAVA_KBY      = 12
-const DEATH_FRAMES  = 36   // 0.6 s — soul rise + fade
+const DEATH_FRAMES  = 96   // 1.6 s — soul rise + fade
 
 const DEFAULT_SCALE = () => window.innerWidth / (15 * TILE)
 const MIN_SCALE     = 0.8
@@ -34,21 +35,23 @@ const PLATFORM  = new Set(['wooden_platform.png'])
 const INSTAKILL = new Set(['venus_guytrap.png', 'hanging_guytrap.png', 'death_spikes.png'])
 const LAVA_SET  = new Set(['lava.png'])
 
-const SIGN_SET  = new Set(['sign.png', 'crappy_sign.png'])
-const CHECKPOINT = 'checkpoint.png'
-const ORB_TILE   = 'great_legendary_orb.png'
+const SIGN_SET  = new Set(['sign.png', 'crappy_sign.png', 'heart_monitor.png'])
+const CHECKPOINT  = 'checkpoint.png'
+const ORB_TILE    = 'great_legendary_orb.png'
+const WIZ_COL     = 97   // col of legendary_wizard.png tile in Parkour.json
+const WIZ_ROW     = 52   // hedge floor row; sprite bottom anchors here
 const DOOR_TILE  = 'main_door.png'
 
 const SIGN_BY_COL = {
-  2:  'Bun venit! Ajunge pana la orb... daca poti. 😏',
-  5:  'Spikes = moarte instantanee! ☠️',
-  8:  'Flytraps musca. Tare. 🌿',
-  11: 'Lava arde! 5 lovituri si gata. 🔥',
-  14: 'Atinge checkpoint-urile — iti salveaza viata! ✨',
+  2:  'Draga Carlita, am fost rapit!\nAm lasat checkpoints. Plis help',
+  5:  'Stupid kid,\nI bomb you',
+  8:  'Plis donet :(\nmi pooron',
+  11: 'Ok recunosc, nu credeam ca ajungi pana aici.',
+  14: 'Vand 200 grass seeds pe 1 WL. NU RADE DE MINE, ECONOMIA ASTA E GATITA',
 }
 const GENERIC_SIGNS = [
-  'Watch your step! 👀', 'One tile at a time...', 'Look before you leap! 🦘',
-  'Almost there... maybe.', 'Believe in yourself! 💪',
+  'Du-te acasa.', 'Chiar.', 'Ok dar de ce.', 'Impresionant sincer.',
+  'Nu.',
 ]
 
 const ORB_MSG =
@@ -77,7 +80,15 @@ function tileStyle(name, n, size) {
     : { background: `url(${BASE_URL+name}) center/calc(100% + 2px) calc(100% + 2px) no-repeat`, imageRendering: 'pixelated' }
 }
 
-export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Parkour.json', worldLayerRef }) {
+const RoFlag = () => (
+  <span style={{ display:'inline-flex', width:16, height:11, marginRight:4, verticalAlign:'middle', border:'1px solid rgba(0,0,0,0.4)', borderRadius:1, overflow:'hidden', flexShrink:0 }}>
+    <span style={{ flex:1, background:'#002B7F' }}/>
+    <span style={{ flex:1, background:'#FCD116' }}/>
+    <span style={{ flex:1, background:'#CE1126' }}/>
+  </span>
+)
+
+export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -121,6 +132,7 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
   const curSpawnRef = useRef(null)
   const signsRef    = useRef([])
   const orbRef      = useRef(null)
+  const doorRef     = useRef(null)
 
   // Physics refs (mutated every frame)
   const pxRef        = useRef(0)
@@ -144,6 +156,18 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
   const [dying,        setDying]        = useState(false)
   const [deathAnimKey, setDeathAnimKey] = useState(0)
 
+  const [wizHp,          setWizHp]          = useState(5)
+  const [wizHit,         setWizHit]         = useState(false)
+  const [wizDead,        setWizDead]        = useState(false)
+  const [wizDeadKey,     setWizDeadKey]     = useState(0)
+  const [cristianFree,      setCristianFree]      = useState(false)
+  const [crisFreeMsgChars,  setCrisFreeMsgChars]  = useState(0)
+  const crisFreeTsRef = useRef(null)
+
+  const wizHpRef        = useRef(5)
+  const wizDeadRef      = useRef(false)
+  const cristianFreeRef = useRef(false)
+
   // Load scene
   useEffect(() => {
     fetch(scenePath)
@@ -155,6 +179,8 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
         const signs = []
         let orbPos = null
 
+        let lastCheckCol = -1, lastCheckSpawn = null
+        const initRemoved = new Set()
         for (let r = 0; r < ROWS; r++) {
           for (let c = 0; c < COLS; c++) {
             const fg = grid[r][c]?.fg
@@ -164,14 +190,25 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
               let floorRow = r + 1
               while (floorRow < ROWS && !SOLID.has(grid[floorRow]?.[c]?.fg) && !PLATFORM.has(grid[floorRow]?.[c]?.fg)) floorRow++
               spawn = { px: c * TILE + (TILE - PLAYER_W) / 2, py: floorRow * TILE - PLAYER_H, _found: true }
+              doorRef.current = { r, c }
+            }
+            if (fg === CHECKPOINT && c > lastCheckCol) {
+              lastCheckCol = c
+              lastCheckSpawn = { px: c * TILE + (TILE - PLAYER_W) / 2, py: r * TILE - PLAYER_H }
             }
             if (SIGN_SET.has(fg)) {
               const text = SIGN_BY_COL[c] ?? GENERIC_SIGNS[(r * 7 + c * 13) % GENERIC_SIGNS.length]
-              signs.push({ r, c, text })
+              signs.push({ r, c, text, tile: fg })
             }
             if (fg === ORB_TILE) orbPos = { r, c }
+            // Hide the small wizard tile — replaced by the large overlay sprite
+            if (fg === 'legendary_wizard.png') initRemoved.add(`${r},${c}`)
           }
         }
+        // shortcut: spawn at last checkpoint for testing, revert to door spawn when done
+        if (lastCheckSpawn) spawn = lastCheckSpawn
+        removedRef.current = initRemoved
+        setRemoved(new Set(initRemoved))
 
         spawnRef.current  = spawn
         signsRef.current  = signs
@@ -203,7 +240,6 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
     const isLeft  = e => e.code === 'ArrowLeft'  || e.key === 'a' || e.key === 'A'
     const isRight = e => e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D'
     const isJump  = e => e.code === 'Space'      || e.key === ' '
-    const isPunch = e => e.key === 'e' || e.key === 'E'
 
     const down = e => {
       if (isLeft(e))  { keys.current.left  = true;  e.preventDefault() }
@@ -221,7 +257,6 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
           playSfx('/sounds/jump.wav', { volume: 0.5 })
         }
       }
-      if (isPunch(e) && !e.repeat) tryPunchOrb()
       if (e.key === 'Escape') { e.preventDefault(); setMenuOpen(true) }
     }
     const up   = e => {
@@ -241,22 +276,102 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
     }
   }, [loading])
 
-  function tryPunchOrb() {
-    if (hasOrbRef.current) return
-    const orb = orbRef.current
-    if (!orb || removedRef.current.has(`${orb.r},${orb.c}`)) return
+  function handleWorldClick(e) {
+    if (showOrbMsg || menuOpen) return
     const px = pxRef.current + PLAYER_W / 2
     const py = pyRef.current + PLAYER_H / 2
-    const dist = Math.hypot(px - (orb.c * TILE + TILE / 2), py - (orb.r * TILE + TILE / 2))
-    if (dist < TILE * 2.5) {
-      removedRef.current = new Set([...removedRef.current, `${orb.r},${orb.c}`])
-      setRemoved(new Set(removedRef.current))
-      hasOrbRef.current = true
-      setHasOrb(true)
-      setShowOrbMsg(true)
-      playSfx('/sounds/achievement.wav', { volume: 0.9 })
+
+    // On top of door → exit world (player AND cursor must be over the door tile)
+    const door = doorRef.current
+    if (door && groundedRef.current) {
+      const cam = camRef.current || { x: 0, y: 0 }
+      const tScale = DT / TILE
+      const clickPhysX = (e.clientX + cam.x) / tScale
+      const clickPhysY = (e.clientY + cam.y) / tScale
+      const dLeft = door.c * TILE, dRight = (door.c + 1) * TILE
+      const dTop  = door.r * TILE, dBot   = (door.r + 1) * TILE
+      if (px >= dLeft && px <= dRight &&
+          pyRef.current + PLAYER_H >= dBot - 4 &&
+          clickPhysX >= dLeft && clickPhysX <= dRight &&
+          clickPhysY >= dTop  && clickPhysY <= dBot) {
+        if (hasOrbRef.current) onComplete?.()
+        else onMenu?.()
+        return
+      }
+    }
+
+    // Cursor on wizard sprite?
+    if (!wizDeadRef.current) {
+      const cam = camRef.current || { x: 0, y: 0 }
+      const tScale = DT / TILE
+      const cPhysX = (e.clientX + cam.x) / tScale
+      const cPhysY = (e.clientY + cam.y) / tScale
+      if (cPhysX >= WIZ_COL * TILE - TILE * 0.5 && cPhysX <= (WIZ_COL + 2) * TILE &&
+          cPhysY >= WIZ_ROW * TILE - TILE * 3   && cPhysY <= WIZ_ROW * TILE + TILE) {
+        punchWizard(); return
+      }
+    }
+
+    // Cursor on cage (only after wizard is dead)?
+    if (!cristianFreeRef.current && wizDeadRef.current) {
+      const cam2 = camRef.current || { x: 0, y: 0 }
+      const tScale2 = DT / TILE
+      const cPhysX2 = (e.clientX + cam2.x) / tScale2
+      const cPhysY2 = (e.clientY + cam2.y) / tScale2
+      if (cPhysX2 >= (WIZ_COL-2)*TILE - TILE*0.2 && cPhysX2 <= (WIZ_COL-1)*TILE + TILE*0.2 &&
+          cPhysY2 >= WIZ_ROW*TILE - TILE*1.6     && cPhysY2 <= WIZ_ROW*TILE + TILE*0.1) {
+        freeCristian(); return
+      }
     }
   }
+
+  function punchWizard() {
+    if (wizDeadRef.current) return
+    const newHp = Math.max(0, wizHpRef.current - 1)
+    wizHpRef.current = newHp
+    setWizHp(newHp)
+    setWizHit(true)
+    playSfx('/sounds/punch-hit.wav', { volume: 0.8 })
+    setTimeout(() => setWizHit(false), 160)
+
+    if (newHp <= 0) {
+      wizDeadRef.current = true
+      setWizDead(true)
+      setWizDeadKey(k => k + 1)
+      setTimeout(() => {
+        const orb = orbRef.current
+        if (orb) {
+          removedRef.current = new Set([...removedRef.current, `${orb.r},${orb.c}`])
+          setRemoved(new Set(removedRef.current))
+        }
+        hasOrbRef.current = true
+        setHasOrb(true)
+        playSfx('/sounds/achievement.wav', { volume: 0.9 })
+      }, 850)
+    }
+  }
+
+  const CRIS_FREE_MSG = 'Mersi ca m-ai salvat soanrece! Te astept la ferma mea!'
+
+  function freeCristian() {
+    if (cristianFreeRef.current) return
+    cristianFreeRef.current = true
+    setCristianFree(true)
+    playSfx('/sounds/punch-miss.wav', { volume: 0.5 })
+    setTimeout(() => {
+      crisFreeTsRef.current = new Date().toTimeString().slice(0, 8)
+      setCrisFreeMsgChars(1)
+    }, 1000)
+  }
+
+  useEffect(() => {
+    if (!crisFreeTsRef.current || crisFreeMsgChars === 0) return
+    const done = crisFreeMsgChars >= CRIS_FREE_MSG.length
+    onChatMsg?.({ t: crisFreeTsRef.current, msg: `[Cristian]: ${CRIS_FREE_MSG.slice(0, crisFreeMsgChars)}`, color: '#f0c060', icon: '#4a88b8', done, commit: done })
+    if (done) { crisFreeTsRef.current = null; const id = setTimeout(() => setCrisFreeMsgChars(0), 5000); return () => clearTimeout(id) }
+    const id = setTimeout(() => setCrisFreeMsgChars(n => n + 1), 38)
+    return () => clearTimeout(id)
+  }, [crisFreeMsgChars])
 
   function triggerDeath() {
     if (dyingRef.current) return
@@ -403,10 +518,10 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
           const key  = `${r},${c}`
           if (removedRef.current.has(key)) continue
           const name = getFg(grid, r, c)
-          if (name === CHECKPOINT && !litRef.current.has(key)) {
-            litRef.current = new Set([...litRef.current, key])
-            curSpawnRef.current = { px: c * TILE + (TILE - PLAYER_W) / 2, py: r * TILE - PLAYER_H }
-            setLitChecks(new Set(litRef.current))
+          if (name === CHECKPOINT && curSpawnRef.current?.key !== key) {
+            litRef.current = new Set([key])
+            curSpawnRef.current = { px: c * TILE + (TILE - PLAYER_W) / 2, py: r * TILE - PLAYER_H, key }
+            setLitChecks(new Set([key]))
             playSfx('/sounds/achievement.wav', { volume: 0.5 })
           }
         }
@@ -494,28 +609,46 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
     const px = pxRef.current
     for (const s of signsRef.current) {
       if (px + PLAYER_W > s.c * TILE && px < (s.c + 1) * TILE) {
-        signEl = (
-          <div style={{
-            position:'fixed',
-            left: s.c * DT - camX + DT / 2,
-            top:  s.r * DT - camY - 48,
-            transform:'translateX(-50%)',
-            background:'#223a42', color:'#fff', border:'2px solid #aee2f7',
-            padding:'6px 14px', borderRadius:4, fontSize:18, fontWeight:'bold',
-            whiteSpace:'nowrap', zIndex:50, pointerEvents:'none',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.5)',
-            textShadow:'1px 1px 0 #000, -1px 1px 0 #000',
-          }}>
-            {signText}
-          </div>
-        )
+        const left = s.c * DT - camX + DT / 2
+        const top  = s.r * DT - camY - 48
+        if (s.tile === 'heart_monitor.png') {
+          signEl = (
+            <div style={{
+              position:'fixed', left, top, transform:'translateX(-50%)',
+              background:'#1a5c1a', border:'3px solid #2d8f2d',
+              borderRadius:4, padding:'6px 14px', zIndex:50, pointerEvents:'none',
+              boxShadow:'0 2px 8px rgba(0,0,0,0.6)',
+              fontFamily:'"Century Gothic",sans-serif', fontWeight:900, fontSize:15,
+              lineHeight:1.5, whiteSpace:'nowrap',
+            }}>
+              <div style={{ color:'#fff', textShadow:'1px 1px 0 #000' }}>XxRapeWizardxX</div>
+              <div style={{ color:'#fff', textShadow:'1px 1px 0 #000' }}>
+                Status: <span style={{ color:'#55ff55' }}>Online</span>
+              </div>
+            </div>
+          )
+        } else {
+          signEl = (
+            <div style={{
+              position:'fixed', left, top, transform:'translateX(-50%)',
+              background:'#1a0d2e', color:'#c090ff', border:'2px solid #7030c0',
+              padding:'6px 14px', borderRadius:4, fontSize:15, fontWeight:'bold',
+              whiteSpace:'pre-line', zIndex:50, pointerEvents:'none',
+              boxShadow:'0 2px 8px rgba(0,0,0,0.6)',
+              textShadow:'1px 1px 0 #000, -1px 1px 0 #000',
+              fontFamily:'"Century Gothic",sans-serif', maxWidth:280,
+            }}>
+              {signText}
+            </div>
+          )
+        }
         break
       }
     }
   }
 
   return (
-    <div ref={outerRef} style={{ position:'absolute', inset:0, overflow:'hidden' }}>
+    <div ref={outerRef} onClick={handleWorldClick} style={{ position:'absolute', inset:0, overflow:'hidden', cursor:'crosshair' }}>
       {/* Sky */}
       <div style={{ position:'absolute', inset:0, backgroundImage:`url(/weather/${scene.weather}.png)`, backgroundSize:'cover', backgroundPosition:'center', imageRendering:'pixelated' }} />
 
@@ -532,7 +665,7 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
             transform:'translateX(-50%)',
             whiteSpace:'nowrap', pointerEvents:'none', zIndex:21,
           }}>
-            <span className="legend-name" style={{ fontSize: 12 }}>Carlita of Legend</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif', display:'flex', alignItems:'center' }}><RoFlag/>Carlita</span>
           </div>
         )}
 
@@ -555,7 +688,7 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
               style={{
                 height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
                 filter: dying ? 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' : (lavHit ? 'brightness(3) sepia(1) saturate(20) hue-rotate(315deg)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))'),
-                animation: dying ? 'playerDie 0.6s ease-in forwards' : undefined,
+                animation: dying ? 'playerDie 1.6s ease-in forwards' : undefined,
               }}
             />
             {/* Soul — white ghost that rises and fades on death */}
@@ -569,7 +702,7 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
                   position:'absolute', top:0, left:0,
                   height: spriteDispH, width:'auto', maxWidth:'none', display:'block',
                   filter: 'brightness(8) saturate(0) blur(1px)',
-                  animation: 'soulRise 0.6s ease-out forwards',
+                  animation: 'soulRise 1.6s ease-out forwards',
                   pointerEvents:'none',
                 }}
               />
@@ -577,12 +710,84 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
           </div>
         </div>
         {/* Wizard NPC — stands at col 58, ground row 14 */}
-        <div style={{ position:'absolute', left: 58*DT + DT/2, top: 14*DT - spriteDispH - 20, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
-          <span style={{ fontSize: 11, color: '#c090ff', fontWeight: 700, textShadow: '1px 1px 0 #000,-1px 1px 0 #000', fontFamily: '"Century Gothic",sans-serif' }}>XxRapeWizardxX</span>
+        {!wizDead && <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT - DT*3 - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
+          <span className="legend-name" style={{ fontSize: 15, fontFamily:'"Century Gothic",sans-serif' }}>XxRapeWizardxX</span>
+        </div>}
+        <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20 }}>
+          <img
+            key={wizDeadKey}
+            src="/sprites/blocks/all/legendary_wizard.png"
+            alt=""
+            className="pixel"
+            style={{
+              height: DT*3, width:'auto', maxWidth:'none', display:'block',
+              filter: wizHit ? 'brightness(10) saturate(0)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
+              animation: wizDead ? 'wizDie 0.9s ease-in forwards' : undefined,
+            }}
+          />
         </div>
-        <div style={{ position:'absolute', left: 58*DT + DT/2, top: 14*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20 }}>
-          <img src="/sprites/blocks/all/legendary_wizard.png" alt="" className="pixel" style={{ height: spriteDispH, width:'auto', maxWidth:'none', display:'block', filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' }} />
+
+        {/* Cristian — bound by rope, 1 tile left of wizard */}
+        <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT - DT - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif', display:'flex', alignItems:'center' }}><RoFlag/>Cristian</span>
         </div>
+        <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT + DT*0.12, transform:'translateX(-50%) translateY(-100%) scaleX(1)', pointerEvents:'none', zIndex:20 }}>
+          <img
+            src="/sprites/cristian.png"
+            alt=""
+            className="pixel"
+            style={{
+              height: DT * 1.4, width:'auto', maxWidth:'none', display:'block',
+              filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
+              animation: cristianFree ? undefined : 'crisStruggle 1.4s ease-in-out infinite',
+              transformOrigin: 'bottom center',
+            }}
+          />
+        </div>
+
+        {/* Ropes — hidden once Cristian is freed */}
+        {!cristianFree && (<>
+          {/* Metal cage */}
+          <svg
+            style={{ position:'absolute', left:(WIZ_COL-2)*DT - DT*0.1, top:WIZ_ROW*DT - DT*1.55, width:DT*1.2, height:DT*1.6, pointerEvents:'none', zIndex:22, overflow:'visible' }}
+            viewBox="0 0 120 160" preserveAspectRatio="none"
+          >
+            {/* vertical bars */}
+            {[12,32,52,72,92,108].map(x => (
+              <rect key={x} x={x-3} y="12" width="6" height="136" rx="2" fill="#2e2e2e" stroke="#606060" strokeWidth="1.5"/>
+            ))}
+            {/* top rail */}
+            <rect x="6" y="6" width="108" height="11" rx="3" fill="#252525" stroke="#707070" strokeWidth="2"/>
+            {/* mid rail */}
+            <rect x="6" y="74" width="108" height="9" rx="2" fill="#252525" stroke="#606060" strokeWidth="1.5"/>
+            {/* bottom rail */}
+            <rect x="6" y="143" width="108" height="11" rx="3" fill="#252525" stroke="#707070" strokeWidth="2"/>
+            {/* padlock shackle */}
+            <path d="M 48,74 L 48,65 A 12,12 0 0 1 72,65 L 72,74" fill="none" stroke="#888" strokeWidth="4" strokeLinecap="round"/>
+            {/* padlock body */}
+            <rect x="43" y="71" width="34" height="22" rx="4" fill="#777" stroke="#aaa" strokeWidth="1.5"/>
+            <circle cx="60" cy="81" r="4" fill="#444" stroke="#aaa" strokeWidth="1"/>
+          </svg>
+          {/* Tether rope from Cristian to wizard */}
+          <svg style={{ position:'absolute', left:(WIZ_COL-2)*DT+DT*0.55, top:WIZ_ROW*DT-DT*0.85, width:DT*2.0, height:DT*0.5, pointerEvents:'none', zIndex:19, overflow:'visible' }}
+            viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M 0,10 C 25,24 55,2 80,14 S 100,10 100,10" stroke="#6B3A1F" strokeWidth={5} fill="none" strokeLinecap="round" />
+            <path d="M 0,10 C 25,24 55,2 80,14 S 100,10 100,10" stroke="#C47E3A" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeDasharray="5,4" />
+          </svg>
+        </>)}
+
+        {/* Speech bubble above Cristian after being freed */}
+        {crisFreeMsgChars > 0 && (
+          <div style={{ position:'absolute', left:(WIZ_COL-2)*DT+DT/2, top:WIZ_ROW*DT-DT*1.4, transform:'translateX(-50%) translateY(-100%)', pointerEvents:'none', zIndex:25, whiteSpace:'nowrap', textAlign:'center' }}>
+            <div style={{ background:'#fff', color:'#1a0828', border:'2px solid #aaa', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:700, whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(0,0,0,0.35)', fontFamily:'"Century Gothic",sans-serif' }}>
+              {CRIS_FREE_MSG.slice(0, crisFreeMsgChars)}
+              {crisFreeMsgChars < CRIS_FREE_MSG.length && <span style={{ opacity:0.4 }}>|</span>}
+            </div>
+            <div style={{ position:'absolute', bottom:-10, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'8px solid transparent', borderRight:'8px solid transparent', borderTop:'10px solid #aaa' }} />
+            <div style={{ position:'absolute', bottom:-7, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'7px solid transparent', borderRight:'7px solid transparent', borderTop:'9px solid #fff', zIndex:1 }} />
+          </div>
+        )}
+
       </div>
 
       {signEl}
@@ -596,7 +801,7 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
 
       {/* Orb message */}
       {showOrbMsg && (
-        <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.7)', zIndex:200 }}>
+        <div onClick={e => e.stopPropagation()} style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(0,0,0,0.7)', zIndex:200 }}>
           <div style={{ background:'#13132a', border:'2px solid #ffd700', borderRadius:10, padding:'28px 36px', maxWidth:420, textAlign:'center', boxShadow:'0 0 48px rgba(255,215,0,0.25)' }}>
             <div style={{ fontSize:48, marginBottom:12 }}>🏆</div>
             <div style={{ color:'#ffe', fontSize:15, lineHeight:1.75, whiteSpace:'pre-line', marginBottom:22 }}>
@@ -612,10 +817,7 @@ export default function GridWorld({ onComplete, onMenu, scenePath = '/scenes/Par
         </div>
       )}
 
-      {/* Controls */}
-      <div style={{ position:'fixed', bottom:16, left:'50%', transform:'translateX(-50%)', background:'rgba(0,0,0,0.5)', color:'#ccc', padding:'4px 12px', borderRadius:6, fontSize:12, zIndex:100, pointerEvents:'none' }}>
-        ← → / A D — mișcare &nbsp;|&nbsp; Space — sărit &nbsp;|&nbsp; E — lovit &nbsp;|&nbsp; Scroll — zoom &nbsp;|&nbsp; ESC — meniu
-      </div>
+      <ActionMenu selected="punch" onSelect={() => {}} hasSeed={false} hasLetter={false} />
 
       <GameMenu
         isOpen={menuOpen}

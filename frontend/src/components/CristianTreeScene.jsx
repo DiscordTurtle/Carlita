@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import GridWorld from './GridWorld.jsx'
+import ActionMenu from './ActionMenu.jsx'
 import { getMasterVolume } from '../useAudio.js'
 
 const WIZARD_SPR   = '/sprites/blocks/all/legendary_wizard.png'
@@ -34,7 +35,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const [step,          setStep]          = useState(0)
   const [msgChars,      setMsgChars]      = useState(0)
   const [crisChars,     setCrisChars]     = useState(0)
-  const gangstaRef        = useRef(null)
+  const [showGangsta,   setShowGangsta]   = useState(false)
   const onCinematicEndRef = useRef(onCinematicEnd)
   const crisDialogTsRef   = useRef(null)
   const wizNotifTsRef     = useRef(null)
@@ -107,9 +108,8 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   // Gangsta wizard flash on steal: fade-in image, play scrape, duck tiki_tiki
   useEffect(() => {
     if (phase !== 'steal') return
-    const el = gangstaRef.current
-    if (el) { el.style.display = 'flex'; void el.offsetWidth; el.style.animation = 'gangstaFade 2s ease-in-out forwards' }
-    const hide = setTimeout(() => { if (gangstaRef.current) gangstaRef.current.style.display = 'none' }, 2000)
+    setShowGangsta(true)
+    const hide = setTimeout(() => setShowGangsta(false), 2000)
     const scrape = new Audio('/sounds/concrete_scrape.mp3')
     scrape.volume = getMasterVolume()
     if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() * 0.15
@@ -117,7 +117,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume()
     })
     scrape.play().catch(() => {})
-    return () => { clearTimeout(hide); if (gangstaRef.current) gangstaRef.current.style.display = 'none'; scrape.pause(); scrape.src = ''; if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() }
+    return () => { clearTimeout(hide); setShowGangsta(false); scrape.pause(); scrape.src = ''; if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() }
   }, [phase])
 
   // Cristian message typing
@@ -182,7 +182,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       onChatMsg?.({
         t: wizNotifTsRef.current, msg: `** from (XxRapeWizardxX) in [P4rkour] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
         color: '#ff9090', icon: '#c060ff',
-        done: msgChars >= WIZARD_MSG.length, commit: false,
+        done: msgChars >= WIZARD_MSG.length, commit: msgChars >= WIZARD_MSG.length,
       })
     } else if (wizNotifTsRef.current) {
       onChatMsg?.({ done: true, commit: false })
@@ -289,7 +289,10 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     <>
       {/* Cristian — positioned by RAF */}
       <div ref={crisRef} style={{ position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: 25, textAlign: 'center' }}>
-        <div style={{ fontSize: 11, color: '#f0c060', marginBottom: 2, fontWeight: 700, whiteSpace: 'nowrap', textShadow: '1px 1px 0 #000,-1px 1px 0 #000', fontFamily: '"Century Gothic",sans-serif' }}>Cristian</div>
+        <div style={{ marginBottom: 2, whiteSpace: 'nowrap', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <span style={{ display:'inline-flex', width:16, height:11, marginRight:4, verticalAlign:'middle', border:'1px solid rgba(0,0,0,0.4)', borderRadius:1, overflow:'hidden', flexShrink:0 }}><span style={{flex:1,background:'#002B7F'}}/><span style={{flex:1,background:'#FCD116'}}/><span style={{flex:1,background:'#CE1126'}}/></span>
+          <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif' }}>Cristian</span>
+        </div>
         <img src={CRISTIAN_SPR} alt="Cristian" style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block' }} />
       </div>
 
@@ -323,7 +326,9 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
       {/* Wizard — positioned by RAF */}
       <div ref={wizRef} style={{ position: 'fixed', display: 'none', pointerEvents: 'none', zIndex: 25, textAlign: 'center', transition: 'opacity 0.8s ease-out' }}>
-        <div style={{ fontSize: 11, color: '#c090ff', marginBottom: 2, fontWeight: 700, whiteSpace: 'nowrap', textShadow: '1px 1px 0 #000,-1px 1px 0 #000', fontFamily: '"Century Gothic",sans-serif' }}>XxRapeWizardxX</div>
+        <div style={{ marginBottom: 2, whiteSpace: 'nowrap' }}>
+          <span className="legend-name" style={{ fontSize: 15, fontFamily:'"Century Gothic",sans-serif' }}>XxRapeWizardxX</span>
+        </div>
         <img src={WIZARD_SPR} alt="Wizard" style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block' }} />
       </div>
     </>
@@ -343,11 +348,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       {phase === 'steal' && (
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.4)', animation: 'stealFlash 0.6s ease-out forwards', pointerEvents: 'none' }} />
       )}
-      {phase === 'leave' && (
-        <div style={{ position: 'absolute', bottom: 100, left: '50%', animation: 'fadeInUp 0.5s ease-out', background: 'rgba(0,0,0,0.75)', color: '#c0d8ff', fontSize: 15, fontWeight: 700, padding: '8px 20px', borderRadius: 4, whiteSpace: 'nowrap' }}>
-          Cristian a dispărut...
-        </div>
-      )}
     </div>
   ) : null
 
@@ -360,9 +360,12 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       />
       {chars}
       {screenOverlay}
-      <div ref={gangstaRef} style={{ position:'fixed', inset:0, zIndex:500, display:'none', alignItems:'center', justifyContent:'center', pointerEvents:'none', background:'rgba(0,0,0,0.5)' }}>
-        <img src="/sprites/gangsta_wizard.png" alt="" style={{ maxWidth:'70%', maxHeight:'80%', objectFit:'contain' }} />
-      </div>
+      <ActionMenu selected="punch" onSelect={() => {}} hasSeed={false} hasLetter={false} />
+      {showGangsta && (
+        <div style={{ position:'fixed', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', background:'rgba(0,0,0,0.5)', animation:'gangstaFade 2s ease-in-out forwards' }}>
+          <img src="/sprites/gangsta_wizard.png" alt="" style={{ maxWidth:'70%', maxHeight:'80%', objectFit:'contain' }} />
+        </div>
+      )}
     </div>
   )
 }
