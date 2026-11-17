@@ -587,6 +587,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const ROWS  = grid.length
   const COLS  = grid[0]?.length ?? 0
   const DT    = TILE * tileScale   // display tile size
+  const isWalking = (keys.current.left || keys.current.right) && groundedRef.current
   const viewW = window.innerWidth
   const viewH = window.innerHeight
 
@@ -715,7 +716,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           pointerEvents:'none', zIndex:20,
         }}>
           {/* Relative wrapper so soul can overlay the sprite */}
-          <div style={{ position:'relative', display:'inline-block' }}>
+          <div className={isWalking ? 'animate-walk' : 'animate-idle-bob'} style={{ position:'relative', display:'inline-block' }}>
             <img
               src="/sprites/carlita.png"
               alt="Carlita"
