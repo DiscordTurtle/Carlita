@@ -757,10 +757,11 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                 transformOrigin:'0 50%',
                 transform:`rotate(${punchVec.angle}deg)`,
                 pointerEvents:'none', zIndex:10,
-                animation:'punchStretchFade 0.3s ease-out forwards',
               }}>
-                <img src="/sprites/punch.png" draggable={false} className="pixel"
-                  style={{ height: DT * 0.4, width: punchVec.dist, maxWidth:'none', objectFit:'fill', imageRendering:'pixelated' }} />
+                <div style={{ transformOrigin:'0 50%', animation:'punchStretch 0.3s ease-out forwards' }}>
+                  <img src="/sprites/punch.png" draggable={false} className="pixel"
+                    style={{ height: DT * 0.4, width: punchVec.dist, maxWidth:'none', objectFit:'fill', imageRendering:'pixelated', display:'block' }} />
+                </div>
               </div>
             )}
           </div>
