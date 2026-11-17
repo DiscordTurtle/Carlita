@@ -118,7 +118,7 @@ export default function GameScene({ fromParkour = false }) {
   useEffect(() => { setAudioMasterVolume(masterVolume) }, [masterVolume])
 
   useEffect(() => {
-    fetch('/scenes/Cristian_Tree.json').then(r => r.json()).then(d => setFarmScene(d.grid)).catch(() => {})
+    fetch('/scenes/Cristian_Farm.json').then(r => r.json()).then(d => setFarmScene(d.grid)).catch(() => {})
   }, [])
 
   // Resize handler — recompute layout (and clamp Carlita) on viewport changes.

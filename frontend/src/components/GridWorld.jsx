@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -170,6 +170,9 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
   const wizHpRef        = useRef(5)
   const wizDeadRef      = useRef(false)
   const cristianFreeRef = useRef(false)
+
+  const [droppedSeed,   setDroppedSeed]   = useState(false)
+  const droppedSeedRef  = useRef(false)
 
   // Load scene
   useEffect(() => {
@@ -355,6 +358,8 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
         }
         hasOrbRef.current = true
         setHasOrb(true)
+        droppedSeedRef.current = true
+        setDroppedSeed(true)
         playSfx('/sounds/achievement.wav', { volume: 0.9 })
       }, 850)
     }
@@ -536,6 +541,16 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
             playSfx('/sounds/achievement.wav', { volume: 0.5 })
           }
         }
+      }
+
+      // Seed pickup: walk over wizard drop
+      if (droppedSeedRef.current &&
+          Math.abs(npx + PLAYER_W / 2 - (WIZ_COL + 0.5) * TILE) < TILE * 1.5 &&
+          Math.abs(npy + PLAYER_H     - (WIZ_ROW)       * TILE) < TILE * 2) {
+        droppedSeedRef.current = false
+        setDroppedSeed(false)
+        onSeedPickup?.()
+        playSfx('/sounds/achievement.wav', { volume: 0.7 })
       }
 
       // Sign tooltip
@@ -798,6 +813,24 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
             <path d="M 0,10 C 25,24 55,2 80,14 S 100,10 100,10" stroke="#C47E3A" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeDasharray="5,4" />
           </svg>}
         </>)}
+
+        {/* Dropped seed — appears at wizard's feet after defeat, picked up by walking over */}
+        {droppedSeed && (
+          <img
+            src="/sprites/seed.webp"
+            alt=""
+            className="pixel"
+            style={{
+              position:'absolute',
+              left: WIZ_COL * DT + DT * 0.25,
+              top:  WIZ_ROW * DT - DT * 0.85,
+              width: DT * 0.55, height: 'auto',
+              pointerEvents: 'none', zIndex: 22,
+              animation: 'seedBob 2s ease-in-out infinite',
+              filter: 'drop-shadow(-1px 2px 0 rgba(0,0,0,0.5))',
+            }}
+          />
+        )}
 
         {/* Speech bubble above Cristian after being freed */}
         {crisFreeMsgChars > 0 && (

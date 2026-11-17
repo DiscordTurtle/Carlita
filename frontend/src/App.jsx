@@ -6,7 +6,7 @@ import GridWorld from './components/GridWorld.jsx'
 import CristianTreeScene from './components/CristianTreeScene.jsx'
 import { getMasterVolume, subscribeToMasterVolume } from './useAudio.js'
 
-// Screens: 'title' → 'worldselect' → 'cristiantree' → 'worldselect' → 'parkour' → 'worldselect' → 'game'
+// Screens: 'title' → 'worldselect' → 'cristiantree' → 'worldselect' → 'parkour' (pick seed) → 'worldselect' → 'game'
 const SPLIT_DURATION_MS = 3300
 
 const BASE_LOG = [
@@ -233,7 +233,12 @@ export default function App() {
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
       {screen === 'game'          && <GameScene fromParkour={hasSeed} />}
-      {screen === 'parkour'       && <GridWorld onComplete={() => { setHasSeed(true); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }} onMenu={() => setScreen('worldselect')} onChatMsg={onChatMsg} />}
+      {screen === 'parkour'       && <GridWorld
+          onComplete={() => { setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }}
+          onSeedPickup={() => { setHasSeed(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Love Seed.', color: '#80ee80' }) }}
+          onMenu={() => setScreen('worldselect')}
+          onChatMsg={onChatMsg}
+        />}
       {screen === 'cristiantree'  && (
         <CristianTreeScene
           firstVisit={!farmVisited}
