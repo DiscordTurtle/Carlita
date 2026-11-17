@@ -238,6 +238,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     ifrRef.current  = 0
     hpRef.current   = MAX_HP
     setHp(MAX_HP)
+    setTileScale(DEFAULT_SCALE)
     playSfx('/sounds/blip.wav', { volume: 0.6 })
   }, [])
 
@@ -709,7 +710,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         <div style={{
           position:'absolute',
           left: dispPX + dispPW / 2,
-          top:  dispPY + dispPH,
+          top:  dispPY + dispPH + 4,
           transform:`translateX(-50%) translateY(-100%) scaleX(${flip})${punchAnim && !dying ? ' rotate(-14deg)' : ''}`,
           transition:'none',
           transformOrigin:'bottom center',
