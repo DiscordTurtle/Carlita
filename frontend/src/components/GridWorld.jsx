@@ -105,8 +105,10 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   useEffect(() => setAudioVolume(masterVolume), [masterVolume])
   useEffect(() => subscribeToMasterVolume(v => setMasterVolume(v)), [])
 
-  const outerRef = useRef(null)
-  const camRef   = useRef({ x: 0, y: 0 })
+  const outerRef      = useRef(null)
+  const camRef        = useRef({ x: 0, y: 0 })
+  const heldPunchRef  = useRef(null)
+  const lastMouseRef  = useRef({ x: 0, y: 0 })
 
   // sync external world-layer overlay to our exact camera transform every frame
   // camRef is written during render (below); useLayoutEffect fires after render
@@ -284,7 +286,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     }
   }, [loading])
 
-  function handleWorldClick(e) {
+  function handleWorldClick(clientX, clientY) {
     if (showOrbMsg || menuOpen) return
     const px = pxRef.current + PLAYER_W / 2
     const py = pyRef.current + PLAYER_H / 2
@@ -292,8 +294,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const physScale = DT / TILE
     // Use getBoundingClientRect so coords work even if the container has an offset
     const rect = outerRef.current?.getBoundingClientRect() ?? { left: 0, top: 0 }
-    const localX = e.clientX - rect.left
-    const localY = e.clientY - rect.top
+    const localX = clientX - rect.left
+    const localY = clientY - rect.top
     const cPhysX = (localX + cam.x) / physScale
     const cPhysY = (localY + cam.y) / physScale
 
@@ -690,7 +692,12 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   }
 
   return (
-    <div ref={outerRef} onClick={handleWorldClick} style={{ position:'absolute', inset:0, overflow:'hidden', cursor:'crosshair' }}>
+    <div ref={outerRef}
+      onMouseDown={e => { if (e.button !== 0) return; lastMouseRef.current = { x: e.clientX, y: e.clientY }; handleWorldClick(e.clientX, e.clientY); heldPunchRef.current = setInterval(() => handleWorldClick(lastMouseRef.current.x, lastMouseRef.current.y), 300) }}
+      onMouseMove={e => { lastMouseRef.current = { x: e.clientX, y: e.clientY } }}
+      onMouseUp={() => { clearInterval(heldPunchRef.current); heldPunchRef.current = null }}
+      onMouseLeave={() => { clearInterval(heldPunchRef.current); heldPunchRef.current = null }}
+      style={{ position:'absolute', inset:0, overflow:'hidden', cursor:'crosshair' }}>
       {/* Sky */}
       <div style={{ position:'absolute', inset:0, backgroundImage:`url(/weather/${scene.weather}.png)`, backgroundSize:'cover', backgroundPosition:'center', imageRendering:'pixelated' }} />
 
