@@ -341,15 +341,10 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
 }
 
-@keyframes punchFistR {
-  0%   { transform: translateX(0px);  opacity: 1; }
-  40%  { transform: translateX(22px); opacity: 1; }
-  100% { transform: translateX(14px); opacity: 0; }
-}
-@keyframes punchFistL {
-  0%   { transform: translateX(0px);   opacity: 1; }
-  40%  { transform: translateX(-22px); opacity: 1; }
-  100% { transform: translateX(-14px); opacity: 0; }
+@keyframes punchStretchFade {
+  0%   { opacity: 1; }
+  50%  { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 @keyframes cageBurst {

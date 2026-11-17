@@ -157,6 +157,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [deathAnimKey, setDeathAnimKey] = useState(0)
 
   const [punchAnim,      setPunchAnim]      = useState(false)
+  const [punchVec,       setPunchVec]       = useState(null)  // {angle, dist} for stretch fist
   const [wizHp,          setWizHp]          = useState(5)
   const [wizHit,         setWizHit]         = useState(false)
   const [wizDead,        setWizDead]        = useState(false)
@@ -293,8 +294,16 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
     // Face toward click and trigger punch swing
     facingRef.current = cPhysX > px ? 'right' : 'left'
+    const flip = facingRef.current === 'right' ? 1 : -1
+    const screenCX = px * physScale - cam.x
+    const screenCY = py * physScale - cam.y
+    const sdx = e.clientX - screenCX
+    const sdy = e.clientY - screenCY
+    const dist = Math.min(Math.sqrt(sdx * sdx + sdy * sdy), DT * 2)
+    const angle = Math.atan2(sdy, sdx * flip) * 180 / Math.PI
+    setPunchVec({ angle, dist })
     setPunchAnim(true)
-    setTimeout(() => setPunchAnim(false), 300)
+    setTimeout(() => { setPunchAnim(false); setPunchVec(null) }, 300)
 
     // Door exit — not range-gated; player must already be standing at the door
     const door = doorRef.current
@@ -734,15 +743,27 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                 }}
               />
             )}
-            {/* Fist extends from hand on punch — container scaleX handles direction */}
-            {punchAnim && !dying && (
+            {/* Fist stretches from hand toward click point */}
+            {punchAnim && !dying && punchVec && (
               <div style={{
                 position:'absolute', top:'52%', left:'62%',
+                transformOrigin:'0 50%',
+                transform:`rotate(${punchVec.angle}deg)`,
                 pointerEvents:'none', zIndex:10,
-                animation:'punchFistR 0.28s ease-out forwards',
+                animation:'punchStretchFade 0.3s ease-out forwards',
+                display:'flex', alignItems:'center',
               }}>
+                {punchVec.dist > DT * 0.4 && (
+                  <div style={{
+                    width: punchVec.dist - DT * 0.4,
+                    height: 4,
+                    background: 'rgba(255,200,150,0.75)',
+                    flexShrink: 0,
+                    borderRadius: 2,
+                  }} />
+                )}
                 <img src="/sprites/punch.png" draggable={false} className="pixel"
-                  style={{ height: DT * 0.4, width:'auto' }} />
+                  style={{ height: DT * 0.4, width:'auto', imageRendering:'pixelated' }} />
               </div>
             )}
           </div>
