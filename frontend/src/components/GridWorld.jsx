@@ -761,7 +761,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             {/* Fist stretches from hand toward click point */}
             {punchAnim && !dying && punchVec && (
               <div style={{
-                position:'absolute', top:'52%', left:'62%',
+                position:'absolute', top:'52%', left:'80%',
                 transformOrigin:'0 50%',
                 transform:`rotate(${punchVec.angle}deg)`,
                 pointerEvents:'none', zIndex:10,
