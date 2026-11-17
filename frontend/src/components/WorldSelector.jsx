@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AUTOTILE, autotileCSS } from '../AUTOTILE.js'
+import { AUTOTILE, autotileCSS } from '../autotile.js'
 
 const BASE_URL = '/sprites/blocks/all/'
 // neighbors preset: fully surrounded — gives connected/solid appearance for bg fills
