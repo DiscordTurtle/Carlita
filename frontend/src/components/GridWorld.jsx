@@ -577,7 +577,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         droppedSeedRef.current = false
         setDroppedSeed(false)
         onSeedPickup?.()
-        playSfx('/sounds/achievement.wav', { volume: 0.7 })
+        playSfx('/sounds/seed-pickup.mp3', { volume: 0.9 })
       }
 
       // Sign tooltip
