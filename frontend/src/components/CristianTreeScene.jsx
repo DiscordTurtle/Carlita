@@ -48,7 +48,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const crisRef     = useRef(null)
   const bubbleRef   = useRef(null)
   const wizRef      = useRef(null)
-  const crisDoneRef = useRef(null)  // standing Cristian on second visit
 
   // Wizard animated position in tile space (col, row) — updated by JS lerp
   const wizPosRef      = useRef({ col: WIZ_START_COL, row: WIZ_START_ROW })
@@ -289,6 +288,27 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
+  }, [cinematicDone])
+
+  // After cinematic: keep Cristian visible and camera-synced
+  useEffect(() => {
+    if (!cinematicDone) return
+    let raf
+    function tick() {
+      const cam = window.__gCam
+      if (!cam?.dt) { raf = requestAnimationFrame(tick); return }
+      const DT = cam.dt
+      if (crisRef.current) {
+        crisRef.current.style.display = 'block'
+        crisRef.current.style.left = `${CRIS_COL * DT - cam.x}px`
+        crisRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y}px`
+        const img = crisRef.current.querySelector('img')
+        if (img) img.style.height = `${CRIS_H_TILES * DT}px`
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => { cancelAnimationFrame(raf); if (crisRef.current) crisRef.current.style.display = 'none' }
   }, [cinematicDone])
 
   // Cristian always rendered; RAF controls visibility
