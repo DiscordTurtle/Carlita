@@ -341,6 +341,17 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
 }
 
+@keyframes punchFistR {
+  0%   { transform: translateX(0px);  opacity: 1; }
+  40%  { transform: translateX(22px); opacity: 1; }
+  100% { transform: translateX(14px); opacity: 0; }
+}
+@keyframes punchFistL {
+  0%   { transform: translateX(0px);   opacity: 1; }
+  40%  { transform: translateX(-22px); opacity: 1; }
+  100% { transform: translateX(-14px); opacity: 0; }
+}
+
 /* LetterModal glitch */
 @keyframes letterGlitch {
   0%   { filter: none;                                              transform: none; }

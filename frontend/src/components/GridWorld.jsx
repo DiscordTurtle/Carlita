@@ -156,6 +156,7 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
   const [dying,        setDying]        = useState(false)
   const [deathAnimKey, setDeathAnimKey] = useState(0)
 
+  const [punchAnim,      setPunchAnim]      = useState(false)
   const [wizHp,          setWizHp]          = useState(5)
   const [wizHit,         setWizHit]         = useState(false)
   const [wizDead,        setWizDead]        = useState(false)
@@ -280,49 +281,54 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
     if (showOrbMsg || menuOpen) return
     const px = pxRef.current + PLAYER_W / 2
     const py = pyRef.current + PLAYER_H / 2
+    const cam = camRef.current || { x: 0, y: 0 }
+    const physScale = DT / TILE
+    const cPhysX = (e.clientX + cam.x) / physScale
+    const cPhysY = (e.clientY + cam.y) / physScale
 
-    // On top of door → exit world (player AND cursor must be over the door tile)
+    // Face toward click and trigger punch swing
+    facingRef.current = cPhysX > px ? 'right' : 'left'
+    setPunchAnim(true)
+    setTimeout(() => setPunchAnim(false), 300)
+
+    // Door exit — not range-gated; player must already be standing at the door
     const door = doorRef.current
     if (door && groundedRef.current) {
-      const cam = camRef.current || { x: 0, y: 0 }
-      const tScale = DT / TILE
-      const clickPhysX = (e.clientX + cam.x) / tScale
-      const clickPhysY = (e.clientY + cam.y) / tScale
       const dLeft = door.c * TILE, dRight = (door.c + 1) * TILE
       const dTop  = door.r * TILE, dBot   = (door.r + 1) * TILE
       if (px >= dLeft && px <= dRight &&
           pyRef.current + PLAYER_H >= dBot - 4 &&
-          clickPhysX >= dLeft && clickPhysX <= dRight &&
-          clickPhysY >= dTop  && clickPhysY <= dBot) {
+          cPhysX >= dLeft && cPhysX <= dRight &&
+          cPhysY >= dTop  && cPhysY <= dBot) {
         if (hasOrbRef.current) onComplete?.()
         else onMenu?.()
         return
       }
     }
 
-    // Cursor on wizard sprite?
-    if (!wizDeadRef.current) {
-      const cam = camRef.current || { x: 0, y: 0 }
-      const tScale = DT / TILE
-      const cPhysX = (e.clientX + cam.x) / tScale
-      const cPhysY = (e.clientY + cam.y) / tScale
-      if (cPhysX >= WIZ_COL * TILE - TILE * 0.5 && cPhysX <= (WIZ_COL + 2) * TILE &&
-          cPhysY >= WIZ_ROW * TILE - TILE * 3   && cPhysY <= WIZ_ROW * TILE + TILE) {
-        punchWizard(); return
-      }
+    // 2-tile Chebyshev range check (Growtopia default punch range)
+    const dxTiles = Math.abs(cPhysX - px) / TILE
+    const dyTiles = Math.abs(cPhysY - py) / TILE
+    if (dxTiles > 2 || dyTiles > 2) {
+      playSfx('/sounds/punch-miss.wav', { volume: 0.3 })
+      return
     }
 
-    // Cursor on cage (only after wizard is dead)?
-    if (!cristianFreeRef.current && wizDeadRef.current) {
-      const cam2 = camRef.current || { x: 0, y: 0 }
-      const tScale2 = DT / TILE
-      const cPhysX2 = (e.clientX + cam2.x) / tScale2
-      const cPhysY2 = (e.clientY + cam2.y) / tScale2
-      if (cPhysX2 >= (WIZ_COL-2)*TILE - TILE*0.2 && cPhysX2 <= (WIZ_COL-1)*TILE + TILE*0.2 &&
-          cPhysY2 >= WIZ_ROW*TILE - TILE*1.6     && cPhysY2 <= WIZ_ROW*TILE + TILE*0.1) {
-        freeCristian(); return
-      }
+    // Wizard
+    if (!wizDeadRef.current &&
+        cPhysX >= WIZ_COL * TILE - TILE * 0.5 && cPhysX <= (WIZ_COL + 2) * TILE &&
+        cPhysY >= WIZ_ROW * TILE - TILE * 3   && cPhysY <= WIZ_ROW * TILE + TILE) {
+      punchWizard(); return
     }
+
+    // Cage (after wizard dead)
+    if (!cristianFreeRef.current && wizDeadRef.current &&
+        cPhysX >= (WIZ_COL-2)*TILE - TILE*0.2 && cPhysX <= (WIZ_COL-1)*TILE + TILE*0.2 &&
+        cPhysY >= WIZ_ROW*TILE - TILE*1.6     && cPhysY <= WIZ_ROW*TILE + TILE*0.1) {
+      freeCristian(); return
+    }
+
+    playSfx('/sounds/punch-miss.wav', { volume: 0.4 })
   }
 
   function punchWizard() {
@@ -674,7 +680,8 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
           position:'absolute',
           left: dispPX + dispPW / 2,
           top:  dispPY + dispPH,
-          transform:`translateX(-50%) translateY(-100%) scaleX(${flip})`,
+          transform:`translateX(-50%) translateY(-100%) scaleX(${flip})${punchAnim && !dying ? ' rotate(-14deg)' : ''}`,
+          transition:'transform 0.1s',
           transformOrigin:'bottom center',
           pointerEvents:'none', zIndex:20,
         }}>
@@ -706,6 +713,17 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
                   pointerEvents:'none',
                 }}
               />
+            )}
+            {/* Fist extends from hand on punch — container scaleX handles direction */}
+            {punchAnim && !dying && (
+              <div style={{
+                position:'absolute', top:'52%', left:'62%',
+                pointerEvents:'none', zIndex:10,
+                animation:'punchFistR 0.28s ease-out forwards',
+              }}>
+                <img src="/sprites/punch.png" draggable={false} className="pixel"
+                  style={{ height: DT * 0.4, width:'auto' }} />
+              </div>
             )}
           </div>
         </div>

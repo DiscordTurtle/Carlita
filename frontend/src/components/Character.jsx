@@ -66,6 +66,23 @@ export default function Character({
               draggable={false}
             />
           </div>
+          {punching && (
+            <div style={{
+              position: 'absolute',
+              top: '52%',
+              left: flip > 0 ? '62%' : 'auto',
+              right: flip > 0 ? 'auto' : '62%',
+              zIndex: 10,
+              pointerEvents: 'none',
+              animation: `${flip > 0 ? 'punchFistR' : 'punchFistL'} 0.28s ease-out forwards`,
+            }}>
+              <img
+                src="/sprites/punch.png"
+                draggable={false}
+                style={{ height: 18 * scale, width: 'auto', imageRendering: 'pixelated', transform: `scaleX(${flip})` }}
+              />
+            </div>
+          )}
         </div>
         {holding && (
           <div className="absolute left-1/2 -translate-x-1/2 -top-3 animate-idle-bob">
