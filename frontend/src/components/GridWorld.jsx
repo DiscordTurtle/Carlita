@@ -178,6 +178,18 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [droppedSeed,   setDroppedSeed]   = useState(false)
   const droppedSeedRef  = useRef(false)
 
+  // Jammer ambient audio (looping, volume by distance)
+  const jammerAudioRef  = useRef(null)
+  const JAMMER_R = 48, JAMMER_C = 1  // punch_jammer tile position in Parkour.json
+  useEffect(() => {
+    const a = new Audio('/sounds/jammer.mp3')
+    a.loop = true
+    a.volume = 0
+    a.play().catch(() => {})
+    jammerAudioRef.current = a
+    return () => { a.pause(); a.src = '' }
+  }, [])
+
   // Load scene
   useEffect(() => {
     fetch(scenePath)
@@ -574,6 +586,15 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         if (npx + PLAYER_W > s.c * TILE && npx < (s.c + 1) * TILE) { nearMsg = s.text; break }
       }
       setSignText(nearMsg)
+
+      // Jammer ambient: fade in within 10 blocks, full volume at ≤2 blocks
+      if (jammerAudioRef.current) {
+        const dx = (npx + PLAYER_W / 2) / TILE - (JAMMER_C + 0.5)
+        const dy = (npy + PLAYER_H / 2) / TILE - (JAMMER_R + 0.5)
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        const vol = Math.max(0, Math.min(1, (10 - dist) / 8)) * getMasterVolume()
+        jammerAudioRef.current.volume = vol
+      }
 
       setTick(t => t + 1)
       raf = requestAnimationFrame(loop)
