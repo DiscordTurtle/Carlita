@@ -751,19 +751,9 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                 transform:`rotate(${punchVec.angle}deg)`,
                 pointerEvents:'none', zIndex:10,
                 animation:'punchStretchFade 0.3s ease-out forwards',
-                display:'flex', alignItems:'center',
               }}>
-                {punchVec.dist > DT * 0.4 && (
-                  <div style={{
-                    width: punchVec.dist - DT * 0.4,
-                    height: 4,
-                    background: 'rgba(255,200,150,0.75)',
-                    flexShrink: 0,
-                    borderRadius: 2,
-                  }} />
-                )}
                 <img src="/sprites/punch.png" draggable={false} className="pixel"
-                  style={{ height: DT * 0.4, width:'auto', imageRendering:'pixelated' }} />
+                  style={{ height: DT * 0.4, width: punchVec.dist, objectFit:'fill', imageRendering:'pixelated' }} />
               </div>
             )}
           </div>
