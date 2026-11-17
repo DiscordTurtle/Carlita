@@ -160,6 +160,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
   const [punchAnim,      setPunchAnim]      = useState(false)
   const [punchVec,       setPunchVec]       = useState(null)  // {angle, dist} for stretch fist
+  const [punchKey,       setPunchKey]       = useState(0)     // increments each punch to force anim restart
   const [wizHp,          setWizHp]          = useState(5)
   const [wizHit,         setWizHit]         = useState(false)
   const [wizDead,        setWizDead]        = useState(false)
@@ -334,7 +335,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const angle = Math.atan2(sdy, sdx * flip) * 180 / Math.PI
     setPunchVec({ angle, dist })
     setPunchAnim(true)
-    setTimeout(() => { setPunchAnim(false); setPunchVec(null) }, 300)
+    setPunchKey(k => k + 1)
 
     // Wizard
     if (!wizDeadRef.current &&
@@ -693,10 +694,10 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
   return (
     <div ref={outerRef}
-      onMouseDown={e => { if (e.button !== 0) return; lastMouseRef.current = { x: e.clientX, y: e.clientY }; handleWorldClick(e.clientX, e.clientY); heldPunchRef.current = setInterval(() => handleWorldClick(lastMouseRef.current.x, lastMouseRef.current.y), 300) }}
+      onMouseDown={e => { if (e.button !== 0) return; lastMouseRef.current = { x: e.clientX, y: e.clientY }; heldPunchRef.current = true; handleWorldClick(e.clientX, e.clientY) }}
       onMouseMove={e => { lastMouseRef.current = { x: e.clientX, y: e.clientY } }}
-      onMouseUp={() => { clearInterval(heldPunchRef.current); heldPunchRef.current = null }}
-      onMouseLeave={() => { clearInterval(heldPunchRef.current); heldPunchRef.current = null }}
+      onMouseUp={() => { heldPunchRef.current = false }}
+      onMouseLeave={() => { heldPunchRef.current = false }}
       style={{ position:'absolute', inset:0, overflow:'hidden', cursor:'crosshair' }}>
       {/* Sky */}
       <div style={{ position:'absolute', inset:0, backgroundImage:`url(/weather/${scene.weather}.png)`, backgroundSize:'cover', backgroundPosition:'center', imageRendering:'pixelated' }} />
@@ -765,7 +766,11 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                 transform:`rotate(${punchVec.angle}deg)`,
                 pointerEvents:'none', zIndex:10,
               }}>
-                <div style={{ transformOrigin:'0 50%', animation:'punchStretch 0.3s ease-out forwards' }}>
+                <div key={punchKey} style={{ transformOrigin:'0 50%', animation:'punchStretch 0.3s ease-out forwards' }}
+                  onAnimationEnd={() => {
+                    if (heldPunchRef.current) handleWorldClick(lastMouseRef.current.x, lastMouseRef.current.y)
+                    else { setPunchAnim(false); setPunchVec(null) }
+                  }}>
                   <img src="/sprites/punch.png" draggable={false} className="pixel"
                     style={{ height: DT * 0.4, width: punchVec.dist, maxWidth:'none', objectFit:'fill', imageRendering:'pixelated', display:'block' }} />
                 </div>
