@@ -760,7 +760,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                 animation:'punchStretchFade 0.3s ease-out forwards',
               }}>
                 <img src="/sprites/punch.png" draggable={false} className="pixel"
-                  style={{ height: DT * 0.4, width: punchVec.dist, objectFit:'fill', imageRendering:'pixelated' }} />
+                  style={{ height: DT * 0.4, width: punchVec.dist, maxWidth:'none', objectFit:'fill', imageRendering:'pixelated' }} />
               </div>
             )}
           </div>
