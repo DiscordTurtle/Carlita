@@ -710,7 +710,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           left: dispPX + dispPW / 2,
           top:  dispPY + dispPH,
           transform:`translateX(-50%) translateY(-100%) scaleX(${flip})${punchAnim && !dying ? ' rotate(-14deg)' : ''}`,
-          transition:'transform 0.1s',
+          transition:'none',
           transformOrigin:'bottom center',
           pointerEvents:'none', zIndex:20,
         }}>
