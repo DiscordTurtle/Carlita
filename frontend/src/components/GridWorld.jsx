@@ -163,6 +163,8 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
   const [wizDeadKey,     setWizDeadKey]     = useState(0)
   const [cristianFree,      setCristianFree]      = useState(false)
   const [crisFreeMsgChars,  setCrisFreeMsgChars]  = useState(0)
+  const [cageBreaking,      setCageBreaking]      = useState(false)
+  const [cageGone,          setCageGone]          = useState(false)
   const crisFreeTsRef = useRef(null)
 
   const wizHpRef        = useRef(5)
@@ -344,6 +346,7 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
       wizDeadRef.current = true
       setWizDead(true)
       setWizDeadKey(k => k + 1)
+      playSfx('/sounds/dialog-close.wav', { volume: 0.9 })
       setTimeout(() => {
         const orb = orbRef.current
         if (orb) {
@@ -363,7 +366,9 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
     if (cristianFreeRef.current) return
     cristianFreeRef.current = true
     setCristianFree(true)
-    playSfx('/sounds/punch-miss.wav', { volume: 0.5 })
+    setCageBreaking(true)
+    playSfx('/sounds/tree-harvest.wav', { volume: 0.9 })
+    setTimeout(() => setCageGone(true), 420)
     setTimeout(() => {
       crisFreeTsRef.current = new Date().toTimeString().slice(0, 8)
       setCrisFreeMsgChars(1)
@@ -763,11 +768,11 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
           />
         </div>
 
-        {/* Ropes — hidden once Cristian is freed */}
-        {!cristianFree && (<>
+        {/* Ropes — hidden once cage burst animation completes */}
+        {!cageGone && (<>
           {/* Metal cage */}
           <svg
-            style={{ position:'absolute', left:(WIZ_COL-2)*DT - DT*0.1, top:WIZ_ROW*DT - DT*1.55, width:DT*1.2, height:DT*1.6, pointerEvents:'none', zIndex:22, overflow:'visible' }}
+            style={{ position:'absolute', left:(WIZ_COL-2)*DT - DT*0.1, top:WIZ_ROW*DT - DT*1.55, width:DT*1.2, height:DT*1.6, pointerEvents:'none', zIndex:22, overflow:'visible', animation: cageBreaking ? 'cageBurst 0.4s ease-out forwards' : undefined }}
             viewBox="0 0 120 160" preserveAspectRatio="none"
           >
             {/* vertical bars */}
