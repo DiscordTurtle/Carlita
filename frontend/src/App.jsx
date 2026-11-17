@@ -138,8 +138,7 @@ export default function App() {
   // Route by world name so clicking any pill + Enter World goes to the right screen
   function enterWorld(worldName) {
     if (worldName === 'CRISTIAN_FARM') {
-      if (worldPhase === 3) setScreen('game')
-      else { setScreen('cristiantree') }
+      setScreen('cristiantree')
     } else if (worldName === 'P4rkour') {
       setScreen('parkour')
     }
@@ -244,7 +243,7 @@ export default function App() {
           firstVisit={!farmVisited}
           onCinematicEnd={() => { setFarmVisited(true); skipPhase2Ref.current = true; setWorldPhase(2) }}
           onMenu={() => setScreen('worldselect')}
-          onComplete={() => setScreen('worldselect')}
+          onComplete={() => setScreen(worldPhase === 3 ? 'game' : 'worldselect')}
           onChatMsg={onChatMsg}
         />
       )}
