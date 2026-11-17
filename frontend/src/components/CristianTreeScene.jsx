@@ -55,8 +55,9 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const wizTrailPos    = useRef([])
   const rafFrameRef    = useRef(0)
   const explodeRef     = useRef(null)
-  const explodeShownRef = useRef(false)
-  const crisCharsRef   = useRef(0)
+  const explodeShownRef    = useRef(false)
+  const crisCharsRef       = useRef(0)
+  const wizMsgCommittedRef = useRef(false)
 
   const phase = step < STEPS.length ? STEPS[step].key : 'done'
   const phaseRef = useRef(phase)
@@ -179,11 +180,14 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     if (phase === 'notification' || phase === 'leave') {
       if (!wizNotifTsRef.current) wizNotifTsRef.current = new Date().toTimeString().slice(0, 8)
       if (msgChars === 0) return
+      const done = msgChars >= WIZARD_MSG.length
+      if (done && wizMsgCommittedRef.current) return
       onChatMsg?.({
         t: wizNotifTsRef.current, msg: `** from (XxRapeWizardxX) in [P4rkour] ** : ${WIZARD_MSG.slice(0, msgChars)}`,
         color: '#ff9090', icon: '#c060ff',
-        done: msgChars >= WIZARD_MSG.length, commit: msgChars >= WIZARD_MSG.length,
+        done, commit: done,
       })
+      if (done) wizMsgCommittedRef.current = true
     } else if (wizNotifTsRef.current) {
       onChatMsg?.({ done: true, commit: false })
       wizNotifTsRef.current = null
