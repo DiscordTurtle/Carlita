@@ -791,7 +791,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             style={{
               height: DT*3, width:'auto', maxWidth:'none', display:'block',
               filter: wizHit ? 'brightness(10) saturate(0)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
-              animation: wizDead ? 'wizDie 0.9s ease-in forwards' : undefined,
+              animation: wizDead ? 'wizDie 1.4s ease-in forwards' : undefined,
             }}
           />
         </div>
