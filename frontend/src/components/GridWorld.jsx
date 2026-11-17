@@ -768,12 +768,12 @@ export default function GridWorld({ onComplete, onMenu, onChatMsg, scenePath = '
             <rect x="43" y="71" width="34" height="22" rx="4" fill="#777" stroke="#aaa" strokeWidth="1.5"/>
             <circle cx="60" cy="81" r="4" fill="#444" stroke="#aaa" strokeWidth="1"/>
           </svg>
-          {/* Tether rope from Cristian to wizard */}
-          <svg style={{ position:'absolute', left:(WIZ_COL-2)*DT+DT*0.55, top:WIZ_ROW*DT-DT*0.85, width:DT*2.0, height:DT*0.5, pointerEvents:'none', zIndex:19, overflow:'visible' }}
+          {/* Tether rope from Cristian to wizard — hidden once wizard dies */}
+          {!wizDead && <svg style={{ position:'absolute', left:(WIZ_COL-2)*DT+DT*0.55, top:WIZ_ROW*DT-DT*0.85, width:DT*2.0, height:DT*0.5, pointerEvents:'none', zIndex:19, overflow:'visible' }}
             viewBox="0 0 100 24" preserveAspectRatio="none">
             <path d="M 0,10 C 25,24 55,2 80,14 S 100,10 100,10" stroke="#6B3A1F" strokeWidth={5} fill="none" strokeLinecap="round" />
             <path d="M 0,10 C 25,24 55,2 80,14 S 100,10 100,10" stroke="#C47E3A" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeDasharray="5,4" />
-          </svg>
+          </svg>}
         </>)}
 
         {/* Speech bubble above Cristian after being freed */}
