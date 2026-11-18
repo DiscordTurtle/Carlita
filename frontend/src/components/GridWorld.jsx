@@ -397,7 +397,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         setHasOrb(true)
         setDroppedSeed(true)
         playSfx('/sounds/achievement.wav', { volume: 0.9 })
-        setTimeout(() => { droppedSeedRef.current = true }, 500)
+        setTimeout(() => { droppedSeedRef.current = true }, 2000)
       }, 850)
     }
   }
@@ -916,7 +916,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         {/* Dropped seed — appears at wizard's feet after defeat, picked up by walking over */}
         {droppedSeed && (
           <div style={{ position:'absolute', left: WIZ_COL * DT + DT * 0.1, top: WIZ_ROW * DT - DT * 1.1, pointerEvents:'none', zIndex:22, display:'flex', flexDirection:'column', alignItems:'center', animation:'seedBob 2s ease-in-out infinite' }}>
-            <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.375, height: DT * 0.375, imageRendering:'pixelated', objectFit:'contain', filter:'drop-shadow(0 0 6px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
+            <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.5, height: DT * 0.5, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
           </div>
         )}
 
