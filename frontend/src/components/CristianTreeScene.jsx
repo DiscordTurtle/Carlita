@@ -216,8 +216,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       const DT = cam.dt
       const p = phaseRef.current
 
-      const crisDX = CRIS_COL * DT
-      const crisDY = (GROUND_ROW - CRIS_H_TILES) * DT
+      const crisDX    = CRIS_COL * DT
       const crisDispH = CRIS_H_TILES * DT
 
       // Cristian — always visible in phase-3 (cinematicDone), phase-gated in cinematic
@@ -225,8 +224,9 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
         const show = (cinematicDone && worldPhase !== 2) || (p !== 'steal' && p !== 'notification' && p !== 'leave' && p !== 'done')
         crisRef.current.style.display = show ? 'block' : 'none'
         if (show) {
-          crisRef.current.style.left = `${crisDX - cam.x}px`
-          crisRef.current.style.top  = `${crisDY - cam.y}px`
+          crisRef.current.style.left   = `${crisDX - cam.x}px`
+          crisRef.current.style.bottom = `${window.innerHeight - GROUND_ROW * DT + cam.y}px`
+          crisRef.current.style.top    = ''
           const img = crisRef.current.querySelector('img')
           if (img) img.style.height = `${crisDispH}px`
         }
@@ -315,8 +315,9 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
         const show = worldPhase !== 2
         crisRef.current.style.display = show ? 'block' : 'none'
         if (show) {
-          crisRef.current.style.left = `${CRIS_COL * DT - cam.x}px`
-          crisRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y}px`
+          crisRef.current.style.left   = `${CRIS_COL * DT - cam.x}px`
+          crisRef.current.style.bottom = `${window.innerHeight - GROUND_ROW * DT + cam.y}px`
+          crisRef.current.style.top    = ''
           const img = crisRef.current.querySelector('img')
           if (img) img.style.height = `${CRIS_H_TILES * DT}px`
         }
