@@ -84,6 +84,10 @@ export default function App() {
     }
   }, [worldPhase])
 
+  // Typewriter effect for phase whisper
+  const pw = PHASE_WHISPERS[worldPhase]
+  const fullWhisper = pw ? `[${chatTypingTsRef.current || '00:00:00'}] ** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}` : ''
+
   // Play whisper sound once when arriving at worldselect with an untyped whisper
   useEffect(() => {
     if (screen !== 'worldselect' || !pw || whisperDoneRef.current || whisperSoundedRef.current) return
@@ -96,9 +100,6 @@ export default function App() {
     return () => clearTimeout(id)
   }, [screen, worldPhase])
 
-  // Typewriter effect for phase whisper
-  const pw = PHASE_WHISPERS[worldPhase]
-  const fullWhisper = pw ? `[${chatTypingTsRef.current || '00:00:00'}] ** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}` : ''
   useEffect(() => {
     if (screen !== 'worldselect') return
     if (whisperDoneRef.current || typingChars >= fullWhisper.length) return
