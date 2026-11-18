@@ -175,8 +175,9 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const wizDeadRef      = useRef(false)
   const cristianFreeRef = useRef(false)
 
-  const [droppedSeed,   setDroppedSeed]   = useState(false)
-  const droppedSeedRef  = useRef(false)
+  const [droppedSeed,     setDroppedSeed]     = useState(false)
+  const droppedSeedRef    = useRef(false)
+  const [seedInInventory, setSeedInInventory] = useState(false)
 
   // Jammer ambient audio (looping, volume by distance)
   const jammerAudioRef  = useRef(null)
@@ -578,6 +579,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           Math.abs(npy + PLAYER_H     - (WIZ_ROW)       * TILE) < TILE * 2) {
         droppedSeedRef.current = false
         setDroppedSeed(false)
+        setSeedInInventory(true)
         onSeedPickup?.()
         playSfx('/sounds/seed-pickup.mp3', { volume: 0.9 })
       }
@@ -885,7 +887,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
               position:'absolute',
               left: WIZ_COL * DT + DT * 0.25,
               top:  WIZ_ROW * DT - DT * 0.85,
-              width: DT * 0.55, height: 'auto',
+              width: DT * 0.55, height: DT * 0.55,
               pointerEvents: 'none', zIndex: 22,
               animation: 'seedBob 2s ease-in-out infinite',
               filter: 'drop-shadow(-1px 2px 0 rgba(0,0,0,0.5))',
@@ -934,7 +936,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         </div>
       )}
 
-      <ActionMenu selected="punch" onSelect={() => {}} hasSeed={false} hasLetter={false} />
+      <ActionMenu selected="punch" onSelect={() => {}} hasSeed={seedInInventory} hasLetter={false} />
 
       <GameMenu
         isOpen={menuOpen}
