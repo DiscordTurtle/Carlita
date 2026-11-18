@@ -171,6 +171,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [cageBreaking,      setCageBreaking]      = useState(false)
   const [cageGone,          setCageGone]          = useState(false)
   const [cristianGone,      setCristianGone]      = useState(false)
+  const [crisPoofing,       setCrisPoofing]       = useState(false)
   const crisFreeTsRef = useRef(null)
 
   const wizHpRef        = useRef(5)
@@ -425,11 +426,14 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       crisFreeTsRef.current = null
       const bubbleId = setTimeout(() => setCrisFreeMsgChars(0), 2000)
       const leaveId  = setTimeout(() => {
-        playSfx('/sounds/door-slam.mp3', { volume: 1.0 })
-        const lt = new Date().toTimeString().slice(0, 8)
-        onChatMsg?.({ t: lt, msg: 'Cristian has left the world.', color: '#80c8a0', done: true, commit: true })
-        setCristianGone(true)
-      }, 2000)
+        setCrisPoofing(true)
+        setTimeout(() => {
+          playSfx('/sounds/door-slam.mp3', { volume: 1.0 })
+          const lt = new Date().toTimeString().slice(0, 8)
+          onChatMsg?.({ t: lt, msg: 'Cristian has left the world.', color: '#80c8a0', done: true, commit: true })
+          setCristianGone(true)
+        }, 600)
+      }, 5000)
       return () => { clearTimeout(bubbleId); clearTimeout(leaveId) }
     }
     const id = setTimeout(() => setCrisFreeMsgChars(n => n + 1), 38)
@@ -860,18 +864,18 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
         {/* Cristian — bound by rope, 1 tile left of wizard */}
         {!cristianGone && (<>
-        <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT - DT - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
+        <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT - DT - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21, opacity: crisPoofing ? 0 : 1, transition: 'opacity 0.3s' }}>
           <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif', display:'flex', alignItems:'center' }}><RoFlag/>Cristian</span>
         </div>
-        <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT + DT*0.12, transform:'translateX(-50%) translateY(-100%) scaleX(1)', pointerEvents:'none', zIndex:20 }}>
+        <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(1)', pointerEvents:'none', zIndex:20 }}>
           <img
             src="/sprites/cristian.png"
             alt=""
             className="pixel"
             style={{
-              height: DT * 1.4, width:'auto', maxWidth:'none', display:'block',
+              height: DT * 0.875, width:'auto', maxWidth:'none', display:'block',
               filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
-              animation: cristianFree ? undefined : 'crisStruggle 1.4s ease-in-out infinite',
+              animation: crisPoofing ? 'crisPoof 0.6s ease-out forwards' : cristianFree ? undefined : 'crisStruggle 1.4s ease-in-out infinite',
               transformOrigin: 'bottom center',
             }}
           />

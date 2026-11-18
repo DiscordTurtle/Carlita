@@ -365,6 +365,12 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   100% { transform: scale(1.6)  rotate(8deg);   opacity: 0; }
 }
 
+@keyframes crisPoof {
+  0%   { transform: scale(1);    opacity: 1; }
+  40%  { transform: scale(1.5);  opacity: 0.7; }
+  100% { transform: scale(0.1);  opacity: 0; }
+}
+
 /* LetterModal glitch */
 @keyframes letterGlitch {
   0%   { filter: none;                                              transform: none; }
