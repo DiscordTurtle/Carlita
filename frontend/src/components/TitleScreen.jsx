@@ -217,10 +217,10 @@ export default function TitleScreen({ onPlay, splitting }) {
           }}
         >
           <div className="text-4xl md:text-5xl font-black gt-stroke text-[#FFF3C4]">
-            Carlita &amp; Cristian
+            Draga Carlita,
           </div>
           <div className="mt-2 text-xl md:text-2xl font-bold gt-stroke text-[#FFF3C4]">
-            Un an impreuna ♥
+            La multi ani! ♥
           </div>
         </div>
 
