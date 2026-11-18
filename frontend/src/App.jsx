@@ -4,7 +4,7 @@ import GameScene from './components/GameScene.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import GridWorld from './components/GridWorld.jsx'
 import CristianTreeScene from './components/CristianTreeScene.jsx'
-import { getMasterVolume, subscribeToMasterVolume } from './useAudio.js'
+import { getMasterVolume, playSfx, subscribeToMasterVolume } from './useAudio.js'
 
 // Screens: 'title' → 'worldselect' → 'cristiantree' → 'worldselect' → 'parkour' (pick seed) → 'worldselect' → 'game'
 const SPLIT_DURATION_MS = 3300
@@ -88,7 +88,12 @@ export default function App() {
   useEffect(() => {
     if (whisperDoneRef.current || typingChars >= fullWhisper.length) return
     const delay = typingChars === 0 ? 900 : 35
-    const id = setTimeout(() => setTypingChars(n => n + 1), delay)
+    const id = setTimeout(() => {
+      setTypingChars(n => {
+        if (n === 0) playSfx('/sounds/whisper.mp3')
+        return n + 1
+      })
+    }, delay)
     return () => clearTimeout(id)
   }, [typingChars, fullWhisper.length])
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import GridWorld from './GridWorld.jsx'
 import ActionMenu from './ActionMenu.jsx'
-import { getMasterVolume } from '../useAudio.js'
+import { getMasterVolume, playSfx } from '../useAudio.js'
 
 const WIZARD_SPR   = '/sprites/blocks/all/legendary_wizard.png'
 const CRISTIAN_SPR = '/sprites/cristian.png'
@@ -156,7 +156,10 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   useEffect(() => {
     if (phase !== 'notification' && phase !== 'leave') { setMsgChars(0); return }
     if (msgChars >= WIZARD_MSG.length) return
-    const t = setTimeout(() => setMsgChars(n => n + 1), 40)
+    const t = setTimeout(() => setMsgChars(n => {
+      if (n === 0) playSfx('/sounds/whisper.mp3')
+      return n + 1
+    }), 40)
     return () => clearTimeout(t)
   }, [phase, msgChars])
 
