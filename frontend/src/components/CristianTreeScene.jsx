@@ -30,7 +30,7 @@ const WIZ_START_ROW = -4
 const WIZ_END_COL   = 42   // lands beside Cristian
 const WIZ_END_ROW   = GROUND_ROW - WIZARD_H_TILES
 
-export default function CristianTreeScene({ onComplete, onMenu, firstVisit = true, onCinematicEnd, onChatMsg }) {
+export default function CristianTreeScene({ onComplete, onMenu, firstVisit = true, onCinematicEnd, onChatMsg, worldPhase = 1 }) {
   const [cinematicDone, setCinematicDone] = useState(!firstVisit)
   const [step,          setStep]          = useState(0)
   const [msgChars,      setMsgChars]      = useState(0)
@@ -209,7 +209,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
       // Cristian — always visible in phase-3 (cinematicDone), phase-gated in cinematic
       if (crisRef.current) {
-        const show = cinematicDone || (p !== 'steal' && p !== 'notification' && p !== 'leave' && p !== 'done')
+        const show = (cinematicDone && worldPhase !== 2) || (p !== 'steal' && p !== 'notification' && p !== 'leave' && p !== 'done')
         crisRef.current.style.display = show ? 'block' : 'none'
         if (show) {
           crisRef.current.style.left = `${crisDX - cam.x}px`
@@ -299,11 +299,14 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       if (!cam?.dt) { raf = requestAnimationFrame(tick); return }
       const DT = cam.dt
       if (crisRef.current) {
-        crisRef.current.style.display = 'block'
-        crisRef.current.style.left = `${CRIS_COL * DT - cam.x}px`
-        crisRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y}px`
-        const img = crisRef.current.querySelector('img')
-        if (img) img.style.height = `${CRIS_H_TILES * DT}px`
+        const show = worldPhase !== 2
+        crisRef.current.style.display = show ? 'block' : 'none'
+        if (show) {
+          crisRef.current.style.left = `${CRIS_COL * DT - cam.x}px`
+          crisRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y}px`
+          const img = crisRef.current.querySelector('img')
+          if (img) img.style.height = `${CRIS_H_TILES * DT}px`
+        }
       }
       raf = requestAnimationFrame(tick)
     }

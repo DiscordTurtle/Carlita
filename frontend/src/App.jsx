@@ -241,6 +241,7 @@ export default function App() {
       {screen === 'cristiantree'  && (
         <CristianTreeScene
           firstVisit={!farmVisited}
+          worldPhase={worldPhase}
           onCinematicEnd={() => { setFarmVisited(true); skipPhase2Ref.current = true; setWorldPhase(2) }}
           onMenu={() => setScreen('worldselect')}
           onComplete={() => setScreen(worldPhase === 3 ? 'game' : 'worldselect')}
