@@ -15,6 +15,9 @@ const CRIS_H_TILES  = 1.3
 const LETTER_DROP_COL    = TREE_COL - 0.6
 const ANEMONITE_DROP_COL = TREE_COL + 0.9
 
+const CRIS_MSG1 = "Of soricel, iti pregatisem un cadou asa de frumos, dar mickeymouseul de rape wizard mi-a furat samamnta :("
+const CRIS_MSG2 = "Yeeeey Carlita, ai gasit-o!!!!"
+
 export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const [treeState,         setTreeState]         = useState('normal')
   const [selectedTool,      setSelectedTool]      = useState(hasSeed ? 'seed' : 'punch')
@@ -32,10 +35,15 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const letterOnGroundRef   = useRef(false)
   const anemoniteOnGroundRef= useRef(false)
 
-  const crisRef        = useRef(null)
-  const treeOverlayRef = useRef(null)
-  const letterDropRef  = useRef(null)
-  const anemDropRef    = useRef(null)
+  const crisRef          = useRef(null)
+  const treeOverlayRef   = useRef(null)
+  const letterDropRef    = useRef(null)
+  const anemDropRef      = useRef(null)
+  const crisBubbleRef    = useRef(null)
+  const crisBubbleSpanRef= useRef(null)
+  // Refs shared with RAF so bubble text updates without re-render
+  const crisBubbleOnRef  = useRef(false)
+  const crisBubbleMsgRef = useRef('')
 
   // Trigger ending once both items are picked up
   useEffect(() => {
@@ -47,6 +55,25 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     setTimeout(() => playSfx('/sounds/firework.wav',  { volume: 0.6 }), 750)
     setTimeout(() => setShowLetterModal(true), 900)
   }, [hasLetter, hasAnemonite])
+
+  // Entry dialog — Cristian speaks when Carlita arrives
+  useEffect(() => {
+    const id = setTimeout(() => {
+      playSfx('/sounds/whisper.mp3', { volume: 1.0 })
+      const ts = new Date().toTimeString().slice(0, 8)
+      crisBubbleOnRef.current = true
+      let i = 0
+      const type = () => {
+        i++
+        crisBubbleMsgRef.current = CRIS_MSG1.slice(0, i)
+        onChatMsg?.({ t: ts, msg: `[Cristian]: ${CRIS_MSG1.slice(0, i)}`, color: '#f0c060', icon: '#4a88b8', done: i >= CRIS_MSG1.length, commit: i >= CRIS_MSG1.length })
+        if (i < CRIS_MSG1.length) setTimeout(type, 45)
+        else setTimeout(() => { crisBubbleOnRef.current = false }, 4500)
+      }
+      type()
+    }, 1500)
+    return () => clearTimeout(id)
+  }, [])
 
   // Camera-sync + item pickup RAF
   useEffect(() => {
@@ -66,11 +93,22 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
       if (treeOverlayRef.current) {
         const ts = treeStateRef.current
-        treeOverlayRef.current.style.display = ts === 'spliced' ? 'block' : 'none'
+        treeOverlayRef.current.style.display = (ts === 'spliced' || ts === 'growing') ? 'block' : 'none'
         treeOverlayRef.current.style.left  = `${TREE_COL * DT - cam.x}px`
         treeOverlayRef.current.style.top   = `${(TREE_ROW - 1) * DT - cam.y}px`
         treeOverlayRef.current.style.width  = `${DT}px`
         treeOverlayRef.current.style.height = `${2 * DT}px`
+      }
+
+      if (crisBubbleRef.current) {
+        if (crisBubbleOnRef.current) {
+          crisBubbleRef.current.style.display = 'block'
+          crisBubbleRef.current.style.left = `${CRIS_COL * DT - cam.x + DT * 0.5}px`
+          crisBubbleRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y - 80}px`
+          if (crisBubbleSpanRef.current) crisBubbleSpanRef.current.textContent = crisBubbleMsgRef.current
+        } else {
+          crisBubbleRef.current.style.display = 'none'
+        }
       }
 
       if (letterDropRef.current) {
@@ -113,6 +151,21 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     return () => cancelAnimationFrame(raf)
   }, [])
 
+  function triggerMsg2() {
+    playSfx('/sounds/whisper.mp3', { volume: 1.0 })
+    const ts = new Date().toTimeString().slice(0, 8)
+    crisBubbleOnRef.current = true
+    let i = 0
+    const type = () => {
+      i++
+      crisBubbleMsgRef.current = CRIS_MSG2.slice(0, i)
+      onChatMsg?.({ t: ts, msg: `[Cristian]: ${CRIS_MSG2.slice(0, i)}`, color: '#f0c060', icon: '#4a88b8', done: i >= CRIS_MSG2.length, commit: i >= CRIS_MSG2.length })
+      if (i < CRIS_MSG2.length) setTimeout(type, 45)
+      else setTimeout(() => { crisBubbleOnRef.current = false }, 3500)
+    }
+    type()
+  }
+
   function handleCustomInteraction(cPhysX) {
     const nearTree = Math.abs(cPhysX - (TREE_COL * TILE + TILE / 2)) < TILE * 2.5
     if (!nearTree) return false
@@ -122,11 +175,18 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
     if (ts === 'normal' && tool === 'seed') {
       playSfx('/sounds/tree-splice.mp3', { volume: 0.8 })
-      treeStateRef.current = 'spliced'
-      setTreeState('spliced')
+      treeStateRef.current = 'growing'
+      setTreeState('growing')
       selToolRef.current = 'punch'
       setSelectedTool('punch')
       setSeedInHand(false)
+      // Tree becomes punchable after 3 seconds
+      setTimeout(() => {
+        treeStateRef.current = 'spliced'
+        setTreeState('spliced')
+      }, 3000)
+      // Cristian reacts after a beat
+      setTimeout(triggerMsg2, 500)
       return true
     }
 
@@ -142,14 +202,19 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       return true
     }
 
-    if (ts === 'normal' && tool === 'punch') {
-      // Tree not spliced yet — consume the action
+    if ((ts === 'normal' || ts === 'growing') && tool === 'punch') {
       playSfx('/sounds/punch-miss.wav', { volume: 0.5 })
       return true
     }
 
     return false
   }
+
+  const treeHoverName =
+    treeState === 'spliced' ? 'Crystal Tree (Splicuit)' :
+    treeState === 'growing' ? 'Crystal Tree (Creste...)' :
+    treeState === 'broken'  ? 'Crystal Tree (Recoltat)' :
+    'Crystal Tree'
 
   const RoFlag = () => (
     <span style={{ display:'inline-flex', width:16, height:11, marginRight:4, verticalAlign:'middle', border:'1px solid rgba(0,0,0,0.4)', borderRadius:1, overflow:'hidden', flexShrink:0 }}>
@@ -166,6 +231,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         onChatMsg={onChatMsg}
         onCustomInteraction={handleCustomInteraction}
         hideActionMenu
+        hoverNames={{ 'crystal_tree.png': treeHoverName }}
       />
 
       {/* Cristian */}
@@ -178,7 +244,16 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
           style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block', transform: 'scaleX(-1)' }} />
       </div>
 
-      {/* Tree overlay: golden tint + letter crown, visible only when spliced */}
+      {/* Speech bubble above Cristian — RAF-positioned via refs */}
+      <div ref={crisBubbleRef} style={{ position:'fixed', display:'none', pointerEvents:'none', zIndex:30, textAlign:'center', transform:'translateX(-50%)' }}>
+        <div style={{ background:'#fff', color:'#1a0828', border:'2px solid #aaa', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:700, maxWidth:340, whiteSpace:'pre-wrap', boxShadow:'0 2px 8px rgba(0,0,0,0.35)', fontFamily:'"Century Gothic",sans-serif' }}>
+          <span ref={crisBubbleSpanRef} />
+        </div>
+        <div style={{ position:'absolute', bottom:-10, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'8px solid transparent', borderRight:'8px solid transparent', borderTop:'10px solid #aaa' }} />
+        <div style={{ position:'absolute', bottom:-7, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'7px solid transparent', borderRight:'7px solid transparent', borderTop:'9px solid #fff', zIndex:1 }} />
+      </div>
+
+      {/* Tree overlay: golden tint + letter crown, visible when growing or spliced */}
       <div ref={treeOverlayRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 20, display: 'none' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,210,60,0.35)', borderRadius: 3, border: '1px solid rgba(255,220,0,0.4)' }} />
         <div style={{ position: 'absolute', top: -22, left: '50%', transform: 'translateX(-50%)', filter: 'drop-shadow(0 0 6px rgba(255,240,150,.9))' }}>

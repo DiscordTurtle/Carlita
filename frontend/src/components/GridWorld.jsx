@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -101,6 +101,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [masterVolume, setMasterVolume] = useState(getMasterVolume)
   const [tileScale,    setTileScale]    = useState(DEFAULT_SCALE)
   const [,             setTick]         = useState(0)
+  const [hoverInfo,    setHoverInfo]    = useState(null)  // { name, left, top }
 
   useEffect(() => setAudioVolume(masterVolume), [masterVolume])
   useEffect(() => subscribeToMasterVolume(v => setMasterVolume(v)), [])
@@ -725,9 +726,19 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   return (
     <div ref={outerRef}
       onMouseDown={e => { if (e.button !== 0) return; lastMouseRef.current = { x: e.clientX, y: e.clientY }; heldPunchRef.current = true; handleWorldClick(e.clientX, e.clientY) }}
-      onMouseMove={e => { lastMouseRef.current = { x: e.clientX, y: e.clientY } }}
+      onMouseMove={e => {
+        lastMouseRef.current = { x: e.clientX, y: e.clientY }
+        if (hoverNames && scene) {
+          const rect = outerRef.current?.getBoundingClientRect() ?? { left:0, top:0 }
+          const col = Math.floor((e.clientX - rect.left + camRef.current.x) / (TILE * tileScale))
+          const row = Math.floor((e.clientY - rect.top  + camRef.current.y) / (TILE * tileScale))
+          const fg = getFg(scene.grid, row, col)
+          const name = fg && hoverNames[fg] ? hoverNames[fg] : null
+          setHoverInfo(name ? { name, left: e.clientX, top: e.clientY } : null)
+        }
+      }}
       onMouseUp={() => { heldPunchRef.current = false }}
-      onMouseLeave={() => { heldPunchRef.current = false }}
+      onMouseLeave={() => { heldPunchRef.current = false; setHoverInfo(null) }}
       style={{ position:'absolute', inset:0, overflow:'hidden', cursor:'crosshair' }}>
       {/* Sky */}
       <div style={{ position:'absolute', inset:0, backgroundImage:`url(/weather/${scene.weather}.png)`, backgroundSize:'cover', backgroundPosition:'center', imageRendering:'pixelated' }} />
@@ -935,6 +946,12 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       )}
 
       {!hideActionMenu && <ActionMenu selected={selectedSlot} onSelect={selectSlot} hasSeed={seedInInventory} hasLetter={false} />}
+
+      {hoverInfo && (
+        <div style={{ position:'fixed', left: hoverInfo.left + 14, top: hoverInfo.top - 36, background:'rgba(0,0,0,0.75)', color:'#fff', padding:'3px 10px', borderRadius:4, fontSize:13, fontWeight:700, pointerEvents:'none', zIndex:50, whiteSpace:'nowrap', border:'1px solid rgba(255,255,255,0.18)', fontFamily:'"Century Gothic",sans-serif', textShadow:'1px 1px 0 #000' }}>
+          {hoverInfo.name}
+        </div>
+      )}
 
       <GameMenu
         isOpen={menuOpen}
