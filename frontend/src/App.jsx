@@ -143,6 +143,7 @@ export default function App() {
 
   // Route by world name so clicking any pill + Enter World goes to the right screen
   function enterWorld(worldName) {
+    playSfx('/sounds/world-enter.mp3')
     if (worldName === 'CRISTIAN_FARM') {
       setScreen(wizardKilled ? 'game' : 'cristiantree')
     } else if (worldName === 'P4rkour') {
