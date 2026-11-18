@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -630,7 +630,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const camX   = Math.max(0, Math.min(dispPX + dispPW/2 - viewW/2, COLS*DT - viewW))
   const camY   = Math.max(0, Math.min(dispPY + dispPH/2 - viewH/2, ROWS*DT - viewH))
   camRef.current = { x: camX, y: camY }
-  window.__gCam = { x: camX, y: camY, dt: DT }
+  window.__gCam    = { x: camX, y: camY, dt: DT }
+  window.__gPlayer = { x: pxRef.current, y: pyRef.current }
 
   const sc = Math.max(0,       Math.floor(camX / DT))
   const ec = Math.min(COLS-1,  Math.ceil((camX + viewW) / DT))
@@ -936,7 +937,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         </div>
       )}
 
-      <ActionMenu selected="punch" onSelect={() => {}} hasSeed={seedInInventory} hasLetter={false} />
+      {!hideActionMenu && <ActionMenu selected="punch" onSelect={() => {}} hasSeed={seedInInventory} hasLetter={false} />}
 
       <GameMenu
         isOpen={menuOpen}

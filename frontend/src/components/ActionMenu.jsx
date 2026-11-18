@@ -13,12 +13,13 @@ const C = {
 
 // Display names for each inventory item — shown in the tooltip above the bar.
 const ITEM_NAME = {
-  punch:  'Fist',
-  seed:   'Love Seed',
-  letter: 'Love Letter'
+  punch:     'Fist',
+  seed:      'Love Seed',
+  letter:    'Love Letter',
+  anemonite: 'Silver Anemonite'
 }
 
-export default function ActionMenu({ selected, onSelect, hasSeed, hasLetter }) {
+export default function ActionMenu({ selected, onSelect, hasSeed, hasLetter, hasAnemonite }) {
   const slots = [
     { id: 'punch', icon: <PunchIcon />, count: null, enabled: true },
     // Seed slot disappears (becomes empty) once the seed has been planted.
@@ -29,7 +30,10 @@ export default function ActionMenu({ selected, onSelect, hasSeed, hasLetter }) {
     hasLetter
       ? { id: 'letter', icon: <LetterIcon />, count: 1,    enabled: true  }
       : { id: 'empty1', icon: null,           count: null, enabled: false },
-    { id: 'empty2', icon: null, count: null, enabled: false }
+    // Anemonite appears in slot 4 once picked up.
+    hasAnemonite
+      ? { id: 'anemonite', icon: <AnemoniteIcon />, count: 1, enabled: true }
+      : { id: 'empty2',    icon: null, count: null, enabled: false }
   ]
 
   const tooltipText = ITEM_NAME[selected]
@@ -114,6 +118,19 @@ function PunchIcon() {
       draggable={false}
       className="pixel"
       style={{ width: 38, height: 38, imageRendering: 'pixelated' }}
+    />
+  )
+}
+
+function AnemoniteIcon() {
+  return (
+    <img
+      src="/sprites/blocks/all/anemone.png"
+      alt="anemonite"
+      draggable={false}
+      className="pixel"
+      style={{ width: 34, height: 34, imageRendering: 'pixelated', objectFit: 'contain',
+               filter: 'grayscale(0.5) brightness(1.4) contrast(1.1)' }}
     />
   )
 }
