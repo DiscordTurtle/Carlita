@@ -404,6 +404,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     setTimeout(() => setCageGone(true), 420)
     setTimeout(() => {
       crisFreeTsRef.current = new Date().toTimeString().slice(0, 8)
+      playSfx('/sounds/whisper.mp3', { volume: 1.0 })
       setCrisFreeMsgChars(1)
     }, 1000)
   }
