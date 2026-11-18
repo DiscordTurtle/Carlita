@@ -46,6 +46,13 @@ export default function App() {
   const chatDragStartY     = useRef(0)
   const chatDragStartH     = useRef(0)
   const audioRef = useRef(null)
+  const prevScreenRef = useRef('title')
+  useEffect(() => {
+    if (screen === 'worldselect' && prevScreenRef.current !== 'title') {
+      playSfx('/sounds/world-exit.mp3', { volume: 1.0 })
+    }
+    prevScreenRef.current = screen
+  }, [screen])
 
   function addLog(entry) {
     setExtraLog(prev => [...prev, entry])
@@ -238,9 +245,9 @@ export default function App() {
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
       {screen === 'game'          && <GameScene fromParkour={hasSeed} />}
       {screen === 'parkour'       && <GridWorld
-          onComplete={() => { setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }}
+          onComplete={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }}
           onSeedPickup={() => { setHasSeed(true); setWizardKilled(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Love Seed.', color: '#80ee80' }) }}
-          onMenu={() => setScreen('worldselect')}
+          onMenu={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen('worldselect') }}
           onChatMsg={onChatMsg}
         />}
       {screen === 'cristiantree'  && (
@@ -248,8 +255,8 @@ export default function App() {
           firstVisit={!farmVisited}
           worldPhase={worldPhase}
           onCinematicEnd={() => { setFarmVisited(true); skipPhase2Ref.current = true; setWorldPhase(2) }}
-          onMenu={() => setScreen('worldselect')}
-          onComplete={() => setScreen(worldPhase === 3 ? 'game' : 'worldselect')}
+          onMenu={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen('worldselect') }}
+          onComplete={() => { if (worldPhase !== 3) playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen(worldPhase === 3 ? 'game' : 'worldselect') }}
           onChatMsg={onChatMsg}
         />
       )}
