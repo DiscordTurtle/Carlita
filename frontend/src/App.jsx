@@ -46,13 +46,6 @@ export default function App() {
   const chatDragStartY     = useRef(0)
   const chatDragStartH     = useRef(0)
   const audioRef = useRef(null)
-  const prevScreenRef = useRef('title')
-  useEffect(() => {
-    if (screen === 'worldselect' && prevScreenRef.current !== 'title') {
-      playSfx('/sounds/world-exit.mp3', { volume: 1.0 })
-    }
-    prevScreenRef.current = screen
-  }, [screen])
 
   function addLog(entry) {
     setExtraLog(prev => [...prev, entry])
