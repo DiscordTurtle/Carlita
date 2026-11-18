@@ -110,7 +110,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   useEffect(() => {
     if (phase !== 'steal') return
     setShowGangsta(true)
-    const hide = setTimeout(() => setShowGangsta(false), 2000)
     const scrape = new Audio('/sounds/concrete_scrape.mp3')
     scrape.volume = getMasterVolume()
     if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() * 0.15
@@ -118,7 +117,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume()
     })
     scrape.play().catch(() => {})
-    return () => { clearTimeout(hide); setShowGangsta(false); scrape.pause(); scrape.src = ''; if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() }
+    return () => { scrape.pause(); scrape.src = ''; if (battleAudioRef.current && !isFadingOutRef.current) battleAudioRef.current.volume = getMasterVolume() }
   }, [phase])
 
   // Cristian message typing
@@ -394,7 +393,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
       {screenOverlay}
       <ActionMenu selected="punch" onSelect={() => {}} hasSeed={false} hasLetter={false} />
       {showGangsta && (
-        <div style={{ position:'fixed', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', background:'rgba(0,0,0,0.5)', animation:'gangstaFade 2s ease-in-out forwards' }}>
+        <div onAnimationEnd={() => setShowGangsta(false)} style={{ position:'fixed', inset:0, zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'none', background:'rgba(0,0,0,0.5)', animation:'gangstaFade 2s ease-in-out forwards' }}>
           <img src="/sprites/gangsta_wizard.png" alt="" style={{ maxWidth:'70%', maxHeight:'80%', objectFit:'contain', animation:'gangstaSwirl 2s ease-in-out forwards' }} />
         </div>
       )}
