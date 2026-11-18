@@ -191,6 +191,12 @@ export default function App() {
     setScreen('worldselect')   // mount behind the split so it's revealed, not swapped in
     setSplitting(true)
     setTimeout(() => setSplitting(false), SPLIT_DURATION_MS)
+    setTimeout(() => {
+      if (!whisperSoundedRef.current) {
+        whisperSoundedRef.current = true
+        playSfx('/sounds/whisper.mp3', { volume: 1.0 })
+      }
+    }, 900)
   }
 
   function handleFirstInteraction() {
