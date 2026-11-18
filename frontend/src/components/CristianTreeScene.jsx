@@ -125,7 +125,10 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     if (phase !== 'cristian_dialog') { setCrisChars(0); return }
     if (crisChars >= CRISTIAN_MSG.length) return
     const delay = crisChars === 0 ? 400 : 45
-    const t = setTimeout(() => setCrisChars(n => n + 1), delay)
+    const t = setTimeout(() => setCrisChars(n => {
+      if (n === 0) playSfx('/sounds/whisper.mp3')
+      return n + 1
+    }), delay)
     return () => clearTimeout(t)
   }, [phase, crisChars])
 
