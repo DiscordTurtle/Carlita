@@ -385,9 +385,9 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         }
         hasOrbRef.current = true
         setHasOrb(true)
-        droppedSeedRef.current = true
         setDroppedSeed(true)
         playSfx('/sounds/achievement.wav', { volume: 0.9 })
+        setTimeout(() => { droppedSeedRef.current = true }, 500)
       }, 850)
     }
   }
@@ -800,19 +800,29 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         {!wizDead && <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT - DT*3 - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
           <span className="legend-name" style={{ fontSize: 15, fontFamily:'"Century Gothic",sans-serif' }}>XxRapeWizardxX</span>
         </div>}
-        <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20 }}>
-          <img
-            key={wizDeadKey}
-            src="/sprites/blocks/all/legendary_wizard.png"
-            alt=""
-            className="pixel"
-            style={{
-              height: DT*3, width:'auto', maxWidth:'none', display:'block',
-              filter: wizHit ? 'brightness(10) saturate(0)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
-              animation: wizDead ? 'wizDie 1.4s ease-in forwards' : undefined,
-            }}
-          />
-        </div>
+        {!wizDead && (
+          <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20 }}>
+            <img
+              src="/sprites/blocks/all/legendary_wizard.png"
+              alt=""
+              className="pixel"
+              style={{
+                height: DT*3, width:'auto', maxWidth:'none', display:'block',
+                filter: wizHit ? 'brightness(10) saturate(0)' : 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
+              }}
+            />
+          </div>
+        )}
+        {wizDead && (
+          <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20, animation:'wizDie 1.4s ease-in forwards' }}>
+            <img
+              src="/sprites/blocks/all/legendary_wizard.png"
+              alt=""
+              className="pixel"
+              style={{ height: DT*3, width:'auto', maxWidth:'none', display:'block', filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' }}
+            />
+          </div>
+        )}
 
         {/* Cristian — bound by rope, 1 tile left of wizard */}
         <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT - DT - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
