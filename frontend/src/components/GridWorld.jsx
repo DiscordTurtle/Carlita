@@ -178,6 +178,9 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [droppedSeed,     setDroppedSeed]     = useState(false)
   const droppedSeedRef    = useRef(false)
   const [seedInInventory, setSeedInInventory] = useState(false)
+  const [selectedSlot,    setSelectedSlot]    = useState('punch')
+  const selectedSlotRef   = useRef('punch')
+  function selectSlot(id) { selectedSlotRef.current = id; setSelectedSlot(id) }
 
   // Jammer ambient audio (looping, volume by distance)
   const jammerAudioRef  = useRef(null)
@@ -334,6 +337,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const dxTiles = Math.abs(cPhysX - px) / TILE
     const dyTiles = Math.abs(cPhysY - py) / TILE
     if (dxTiles > 2 || dyTiles > 2) return
+
+    if (selectedSlotRef.current !== 'punch') return
 
     // Punch animation — only fires for in-range clicks
     const flip = facingRef.current === 'right' ? 1 : -1
@@ -580,6 +585,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         droppedSeedRef.current = false
         setDroppedSeed(false)
         setSeedInInventory(true)
+        selectedSlotRef.current = 'seed'
+        setSelectedSlot('seed')
         onSeedPickup?.()
         playSfx('/sounds/seed-pickup.mp3', { volume: 0.9 })
       }
@@ -880,20 +887,10 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
         {/* Dropped seed — appears at wizard's feet after defeat, picked up by walking over */}
         {droppedSeed && (
-          <img
-            src="/sprites/seed.webp"
-            alt=""
-            className="pixel"
-            style={{
-              position:'absolute',
-              left: WIZ_COL * DT + DT * 0.25,
-              top:  WIZ_ROW * DT - DT * 0.85,
-              width: DT * 0.55, height: DT * 0.55,
-              pointerEvents: 'none', zIndex: 22,
-              animation: 'seedBob 2s ease-in-out infinite',
-              filter: 'drop-shadow(-1px 2px 0 rgba(0,0,0,0.5))',
-            }}
-          />
+          <div style={{ position:'absolute', left: WIZ_COL * DT + DT * 0.1, top: WIZ_ROW * DT - DT * 1.1, pointerEvents:'none', zIndex:22, display:'flex', flexDirection:'column', alignItems:'center', gap:3, animation:'seedBob 2s ease-in-out infinite' }}>
+            <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.75, height: DT * 0.75, imageRendering:'pixelated', objectFit:'contain', filter:'drop-shadow(0 0 6px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
+            <span style={{ color:'#fff', fontSize:12, fontWeight:900, fontFamily:'"Century Gothic",sans-serif', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', background:'rgba(0,0,0,0.5)', padding:'1px 5px', borderRadius:3 }}>RIDICĂ</span>
+          </div>
         )}
 
         {/* Speech bubble above Cristian after being freed */}
@@ -937,7 +934,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         </div>
       )}
 
-      {!hideActionMenu && <ActionMenu selected="punch" onSelect={() => {}} hasSeed={seedInInventory} hasLetter={false} />}
+      {!hideActionMenu && <ActionMenu selected={selectedSlot} onSelect={selectSlot} hasSeed={seedInInventory} hasLetter={false} />}
 
       <GameMenu
         isOpen={menuOpen}
