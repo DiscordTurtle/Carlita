@@ -122,13 +122,13 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
   // Cristian message typing
   useEffect(() => {
+    if (crisChars === 1) playSfx('/sounds/whisper.mp3')
+  }, [crisChars])
+  useEffect(() => {
     if (phase !== 'cristian_dialog') { setCrisChars(0); return }
     if (crisChars >= CRISTIAN_MSG.length) return
     const delay = crisChars === 0 ? 400 : 45
-    const t = setTimeout(() => setCrisChars(n => {
-      if (n === 0) playSfx('/sounds/whisper.mp3')
-      return n + 1
-    }), delay)
+    const t = setTimeout(() => setCrisChars(n => n + 1), delay)
     return () => clearTimeout(t)
   }, [phase, crisChars])
 
@@ -157,12 +157,12 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
   // Wizard whisper typing — keep alive through leave so chatbox shows full message
   useEffect(() => {
+    if (msgChars === 1) playSfx('/sounds/whisper.mp3')
+  }, [msgChars])
+  useEffect(() => {
     if (phase !== 'notification' && phase !== 'leave') { setMsgChars(0); return }
     if (msgChars >= WIZARD_MSG.length) return
-    const t = setTimeout(() => setMsgChars(n => {
-      if (n === 0) playSfx('/sounds/whisper.mp3')
-      return n + 1
-    }), 40)
+    const t = setTimeout(() => setMsgChars(n => n + 1), 40)
     return () => clearTimeout(t)
   }, [phase, msgChars])
 

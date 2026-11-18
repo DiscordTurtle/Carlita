@@ -86,14 +86,12 @@ export default function App() {
   const pw = PHASE_WHISPERS[worldPhase]
   const fullWhisper = pw ? `[${chatTypingTsRef.current || '00:00:00'}] ** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}` : ''
   useEffect(() => {
+    if (typingChars === 1) playSfx('/sounds/whisper.mp3')
+  }, [typingChars])
+  useEffect(() => {
     if (whisperDoneRef.current || typingChars >= fullWhisper.length) return
     const delay = typingChars === 0 ? 900 : 35
-    const id = setTimeout(() => {
-      setTypingChars(n => {
-        if (n === 0) playSfx('/sounds/whisper.mp3')
-        return n + 1
-      })
-    }, delay)
+    const id = setTimeout(() => setTypingChars(n => n + 1), delay)
     return () => clearTimeout(id)
   }, [typingChars, fullWhisper.length])
 
