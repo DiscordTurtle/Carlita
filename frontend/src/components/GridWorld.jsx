@@ -170,6 +170,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [crisFreeMsgChars,  setCrisFreeMsgChars]  = useState(0)
   const [cageBreaking,      setCageBreaking]      = useState(false)
   const [cageGone,          setCageGone]          = useState(false)
+  const [cristianGone,      setCristianGone]      = useState(false)
   const crisFreeTsRef = useRef(null)
 
   const wizHpRef        = useRef(5)
@@ -420,7 +421,17 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     if (!crisFreeTsRef.current || crisFreeMsgChars === 0) return
     const done = crisFreeMsgChars >= CRIS_FREE_MSG.length
     onChatMsg?.({ t: crisFreeTsRef.current, msg: `[Cristian]: ${CRIS_FREE_MSG.slice(0, crisFreeMsgChars)}`, color: '#f0c060', icon: '#4a88b8', done, commit: done })
-    if (done) { crisFreeTsRef.current = null; const id = setTimeout(() => setCrisFreeMsgChars(0), 5000); return () => clearTimeout(id) }
+    if (done) {
+      crisFreeTsRef.current = null
+      const bubbleId = setTimeout(() => setCrisFreeMsgChars(0), 2000)
+      const leaveId  = setTimeout(() => {
+        playSfx('/sounds/door-slam.mp3', { volume: 1.0 })
+        const lt = new Date().toTimeString().slice(0, 8)
+        onChatMsg?.({ t: lt, msg: 'Cristian has left the world.', color: '#80c8a0', done: true, commit: true })
+        setCristianGone(true)
+      }, 2000)
+      return () => { clearTimeout(bubbleId); clearTimeout(leaveId) }
+    }
     const id = setTimeout(() => setCrisFreeMsgChars(n => n + 1), 38)
     return () => clearTimeout(id)
   }, [crisFreeMsgChars])
@@ -848,6 +859,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         )}
 
         {/* Cristian — bound by rope, 1 tile left of wizard */}
+        {!cristianGone && (<>
         <div style={{ position:'absolute', left: (WIZ_COL-2)*DT + DT/2, top: WIZ_ROW*DT - DT - 18, transform:'translateX(-50%)', whiteSpace:'nowrap', pointerEvents:'none', zIndex:21 }}>
           <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow:'-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily:'"Century Gothic",sans-serif', display:'flex', alignItems:'center' }}><RoFlag/>Cristian</span>
         </div>
@@ -864,6 +876,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             }}
           />
         </div>
+        </>)}
 
         {/* Ropes — hidden once cage burst animation completes */}
         {!cageGone && (<>
