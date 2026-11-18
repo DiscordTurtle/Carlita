@@ -58,6 +58,8 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const explodeShownRef    = useRef(false)
   const crisCharsRef       = useRef(0)
   const wizMsgCommittedRef = useRef(false)
+  const wizWhisperSoundedRef = useRef(false)
+  const crisWhisperSoundedRef = useRef(false)
 
   const phase = step < STEPS.length ? STEPS[step].key : 'done'
   const phaseRef = useRef(phase)
@@ -122,13 +124,16 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
   // Cristian message typing
   useEffect(() => {
-    if (crisChars === 1) playSfx('/sounds/whisper.mp3')
-  }, [crisChars])
-  useEffect(() => {
-    if (phase !== 'cristian_dialog') { setCrisChars(0); return }
+    if (phase !== 'cristian_dialog') { setCrisChars(0); crisWhisperSoundedRef.current = false; return }
     if (crisChars >= CRISTIAN_MSG.length) return
     const delay = crisChars === 0 ? 400 : 45
-    const t = setTimeout(() => setCrisChars(n => n + 1), delay)
+    const t = setTimeout(() => {
+      if (crisChars === 0 && !crisWhisperSoundedRef.current) {
+        crisWhisperSoundedRef.current = true
+        playSfx('/sounds/whisper.mp3', { volume: 1.0 })
+      }
+      setCrisChars(n => n + 1)
+    }, delay)
     return () => clearTimeout(t)
   }, [phase, crisChars])
 
@@ -157,12 +162,15 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
   // Wizard whisper typing — keep alive through leave so chatbox shows full message
   useEffect(() => {
-    if (msgChars === 1) playSfx('/sounds/whisper.mp3')
-  }, [msgChars])
-  useEffect(() => {
-    if (phase !== 'notification' && phase !== 'leave') { setMsgChars(0); return }
+    if (phase !== 'notification' && phase !== 'leave') { setMsgChars(0); wizWhisperSoundedRef.current = false; return }
     if (msgChars >= WIZARD_MSG.length) return
-    const t = setTimeout(() => setMsgChars(n => n + 1), 40)
+    const t = setTimeout(() => {
+      if (msgChars === 0 && !wizWhisperSoundedRef.current) {
+        wizWhisperSoundedRef.current = true
+        playSfx('/sounds/whisper.mp3', { volume: 1.0 })
+      }
+      setMsgChars(n => n + 1)
+    }, 40)
     return () => clearTimeout(t)
   }, [phase, msgChars])
 
