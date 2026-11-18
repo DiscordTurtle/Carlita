@@ -29,6 +29,7 @@ export default function App() {
   const [splitting,        setSplitting]        = useState(false)
   const [worldPhase,       setWorldPhase]       = useState(1)
   const [hasSeed,          setHasSeed]          = useState(false)
+  const [wizardKilled,     setWizardKilled]     = useState(false)
   const [extraLog,         setExtraLog]         = useState([])
   const [farmVisited,      setFarmVisited]      = useState(false)
   const [chatH,            setChatH]            = useState(0)
@@ -138,7 +139,7 @@ export default function App() {
   // Route by world name so clicking any pill + Enter World goes to the right screen
   function enterWorld(worldName) {
     if (worldName === 'CRISTIAN_FARM') {
-      setScreen('cristiantree')
+      setScreen(wizardKilled ? 'game' : 'cristiantree')
     } else if (worldName === 'P4rkour') {
       setScreen('parkour')
     }
@@ -234,7 +235,7 @@ export default function App() {
       {screen === 'game'          && <GameScene fromParkour={hasSeed} />}
       {screen === 'parkour'       && <GridWorld
           onComplete={() => { setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }}
-          onSeedPickup={() => { setHasSeed(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Love Seed.', color: '#80ee80' }) }}
+          onSeedPickup={() => { setHasSeed(true); setWizardKilled(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Love Seed.', color: '#80ee80' }) }}
           onMenu={() => setScreen('worldselect')}
           onChatMsg={onChatMsg}
         />}
