@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import TitleScreen from './components/TitleScreen.jsx'
-import GameScene from './components/GameScene.jsx'
+import FarmFinalScene from './components/FarmFinalScene.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import GridWorld from './components/GridWorld.jsx'
 import CristianTreeScene from './components/CristianTreeScene.jsx'
@@ -39,6 +39,7 @@ export default function App() {
   const [fuChars,          setFuChars]          = useState(0)
   const chatTypingTsRef    = useRef(null)
   const whisperDoneRef     = useRef(false)
+  const whisperSoundedRef  = useRef(false)
   const skipPhase2Ref      = useRef(false)
   const fuTsRef            = useRef(null)
   const fuDoneRef          = useRef(false)
@@ -77,10 +78,23 @@ export default function App() {
       setTimeout(() => setWhisperCommitted(true), 200)
     } else {
       whisperDoneRef.current = false
+      whisperSoundedRef.current = false
       setTypingChars(0)
       setWhisperCommitted(false)
     }
   }, [worldPhase])
+
+  // Play whisper sound once when arriving at worldselect with an untyped whisper
+  useEffect(() => {
+    if (screen !== 'worldselect' || !pw || whisperDoneRef.current || whisperSoundedRef.current) return
+    const id = setTimeout(() => {
+      if (!whisperSoundedRef.current && !whisperDoneRef.current) {
+        whisperSoundedRef.current = true
+        playSfx('/sounds/whisper.mp3', { volume: 1.0 })
+      }
+    }, 900)
+    return () => clearTimeout(id)
+  }, [screen, worldPhase])
 
   // Typewriter effect for phase whisper
   const pw = PHASE_WHISPERS[worldPhase]
@@ -90,7 +104,6 @@ export default function App() {
     if (whisperDoneRef.current || typingChars >= fullWhisper.length) return
     const delay = typingChars === 0 ? 900 : 35
     const id = setTimeout(() => {
-      if (typingChars === 0) playSfx('/sounds/whisper.mp3', { volume: 1.0 })
       setTypingChars(n => n + 1)
     }, delay)
     return () => clearTimeout(id)
@@ -237,7 +250,7 @@ export default function App() {
 
   return (
     <div className="relative w-full h-full" onClick={handleFirstInteraction}>
-      {screen === 'game'          && <GameScene fromParkour={hasSeed} />}
+      {screen === 'game'          && <FarmFinalScene hasSeed={hasSeed} onChatMsg={onChatMsg} onMenu={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen('worldselect') }} />}
       {screen === 'parkour'       && <GridWorld
           onComplete={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }}
           onSeedPickup={() => { setHasSeed(true); setWizardKilled(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Love Seed.', color: '#80ee80' }) }}

@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -360,6 +360,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       freeCristian(); return
     }
 
+    if (onCustomInteraction?.(cPhysX, cPhysY, px, py)) return
     playSfx('/sounds/punch-miss.wav', { volume: 0.4 })
   }
 
