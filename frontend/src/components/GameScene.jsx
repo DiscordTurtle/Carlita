@@ -93,7 +93,7 @@ export default function GameScene({ fromParkour = false }) {
   )
   const [punchSwing,      setPunchSwing]      = useState(false)
   const [punchOffset,     setPunchOffset]     = useState(0)
-  const [masterVolume,    setMasterVolume]    = useState(1)
+  const [masterVolume,    setMasterVolume]    = useState(0.1)
   const [selectedSlot,    setSelectedSlot]    = useState('seed')
   const [showTreeName,    setShowTreeName]    = useState(false)
   const [menuOpen,        setMenuOpen]        = useState(false)
