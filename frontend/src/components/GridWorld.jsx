@@ -814,12 +814,12 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           </div>
         )}
         {wizDead && (
-          <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20, animation:'wizDie 1.4s ease-in forwards' }}>
+          <div style={{ position:'absolute', left: WIZ_COL*DT + DT/2, top: WIZ_ROW*DT, transform:'translateX(-50%) translateY(-100%) scaleX(-1)', pointerEvents:'none', zIndex:20 }}>
             <img
               src="/sprites/blocks/all/legendary_wizard.png"
               alt=""
               className="pixel"
-              style={{ height: DT*3, width:'auto', maxWidth:'none', display:'block', filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))' }}
+              style={{ height: DT*3, width:'auto', maxWidth:'none', display:'block', filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', animation:'wizDie 1.4s ease-in forwards' }}
             />
           </div>
         )}
