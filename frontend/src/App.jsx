@@ -86,6 +86,7 @@ export default function App() {
   const pw = PHASE_WHISPERS[worldPhase]
   const fullWhisper = pw ? `[${chatTypingTsRef.current || '00:00:00'}] ** from (${pw.sender}) in [${pw.world}] ** : ${pw.text}` : ''
   useEffect(() => {
+    if (screen !== 'worldselect') return
     if (whisperDoneRef.current || typingChars >= fullWhisper.length) return
     const delay = typingChars === 0 ? 900 : 35
     const id = setTimeout(() => {
@@ -93,7 +94,7 @@ export default function App() {
       setTypingChars(n => n + 1)
     }, delay)
     return () => clearTimeout(id)
-  }, [typingChars, fullWhisper.length])
+  }, [screen, typingChars, fullWhisper.length])
 
   // Commit whisper to extraLog when it finishes typing (so it persists across phase changes)
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function App() {
   const fu = pw?.followUp
   useEffect(() => {
     if (!whisperCommitted || !fu || fuDoneRef.current) return
-    const id = setTimeout(() => { fuTsRef.current = new Date().toTimeString().slice(0, 8); setFuChars(1) }, 1200)
+    const id = setTimeout(() => { fuTsRef.current = new Date().toTimeString().slice(0, 8); playSfx('/sounds/whisper.mp3', { volume: 1.0 }); setFuChars(1) }, 1200)
     return () => clearTimeout(id)
   }, [whisperCommitted])
 
