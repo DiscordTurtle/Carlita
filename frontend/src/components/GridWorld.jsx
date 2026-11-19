@@ -134,6 +134,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const spawnRef    = useRef({ px: 0, py: 0 })
   const curSpawnRef = useRef(null)
   const signsRef    = useRef([])
+  const hoverTilesRef = useRef([])
   const orbRef      = useRef(null)
   const doorRef     = useRef(null)
 
@@ -252,6 +253,19 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         setLoading(false)
       })
   }, [])
+
+  // Build proximity list for hoverNames tiles (re-runs when scene or hoverNames changes)
+  useEffect(() => {
+    if (!scene || !hoverNames) { hoverTilesRef.current = []; return }
+    const tiles = []
+    const grid = scene.grid
+    for (let r = 0; r < grid.length; r++)
+      for (let c = 0; c < grid[0].length; c++) {
+        const fg = grid[r][c]?.fg
+        if (fg && hoverNames[fg]) tiles.push({ r, c, name: hoverNames[fg] })
+      }
+    hoverTilesRef.current = tiles
+  }, [scene, hoverNames])
 
   const respawn = useCallback(() => {
     const sp = curSpawnRef.current ?? spawnRef.current
@@ -628,6 +642,13 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       }
       setSignText(nearMsg)
 
+      // Hover-name tile proximity (same column-overlap check as signs)
+      let nearHover = null
+      for (const t of hoverTilesRef.current) {
+        if (npx + PLAYER_W > t.c * TILE && npx < (t.c + 1) * TILE) { nearHover = { name: t.name, col: t.c, row: t.r }; break }
+      }
+      setHoverInfo(nearHover)
+
       // Jammer ambient: fade in within 10 blocks, full volume at ≤2 blocks
       if (jammerAudioRef.current) {
         const dx = (npx + PLAYER_W / 2) / TILE - (JAMMER_C + 0.5)
@@ -755,20 +776,9 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   return (
     <div ref={outerRef}
       onMouseDown={e => { if (e.button !== 0) return; lastMouseRef.current = { x: e.clientX, y: e.clientY }; heldPunchRef.current = true; handleWorldClick(e.clientX, e.clientY) }}
-      onMouseMove={e => {
-        lastMouseRef.current = { x: e.clientX, y: e.clientY }
-        if (hoverNames && scene) {
-          const rect = outerRef.current?.getBoundingClientRect() ?? { left:0, top:0 }
-          const col = Math.floor((e.clientX - rect.left + camRef.current.x) / (TILE * tileScale))
-          const row = Math.floor((e.clientY - rect.top  + camRef.current.y) / (TILE * tileScale))
-          const fg = getFg(scene.grid, row, col)
-          const name = fg && hoverNames[fg] ? hoverNames[fg] : null
-          const DT = TILE * tileScale
-          setHoverInfo(name ? { name, left: col * DT - camRef.current.x + DT / 2, top: row * DT - camRef.current.y - 48 } : null)
-        }
-      }}
+      onMouseMove={e => { lastMouseRef.current = { x: e.clientX, y: e.clientY } }}
       onMouseUp={() => { heldPunchRef.current = false }}
-      onMouseLeave={() => { heldPunchRef.current = false; setHoverInfo(null) }}
+      onMouseLeave={() => { heldPunchRef.current = false }}
       style={{ position:'absolute', inset:0, overflow:'hidden', cursor:'crosshair' }}>
       {/* Sky */}
       <div style={{ position:'absolute', inset:0, backgroundImage:`url(/weather/${scene.weather}.png)`, backgroundSize:'cover', backgroundPosition:'center', imageRendering:'pixelated' }} />
@@ -990,7 +1000,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       {!hideActionMenu && <ActionMenu selected={selectedSlot} onSelect={selectSlot} hasSeed={seedInInventory} hasLetter={false} />}
 
       {hoverInfo && (
-        <div style={{ position:'fixed', left: hoverInfo.left, top: hoverInfo.top, transform:'translateX(-50%)', background:'#1a0d2e', color:'#c090ff', border:'2px solid #7030c0', padding:'5px 14px', borderRadius:4, fontSize:13, fontWeight:700, pointerEvents:'none', zIndex:50, whiteSpace:'nowrap', fontFamily:'"Century Gothic",sans-serif', textShadow:'1px 1px 0 #000' }}>
+        <div style={{ position:'fixed', left: hoverInfo.col * DT - camX + DT / 2, top: hoverInfo.row * DT - camY - 48, transform:'translateX(-50%)', background:'#1a0d2e', color:'#c090ff', border:'2px solid #7030c0', padding:'5px 14px', borderRadius:4, fontSize:13, fontWeight:700, pointerEvents:'none', zIndex:50, whiteSpace:'nowrap', fontFamily:'"Century Gothic",sans-serif', textShadow:'1px 1px 0 #000' }}>
           {hoverInfo.name}
         </div>
       )}
