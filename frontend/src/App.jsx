@@ -260,7 +260,7 @@ export default function App() {
       {screen === 'game'          && <FarmFinalScene hasSeed={hasSeed} onChatMsg={onChatMsg} onMenu={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen('worldselect') }} />}
       {screen === 'parkour'       && <GridWorld
           onComplete={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setWorldPhase(3); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You have left P4rkour.', color: '#80c8a0' }); setScreen('worldselect') }}
-          onSeedPickup={() => { setHasSeed(true); setWizardKilled(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Love Seed.', color: '#80ee80' }) }}
+          onSeedPickup={() => { setHasSeed(true); setWizardKilled(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Crayon Seed.', color: '#80ee80' }) }}
           onMenu={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen('worldselect') }}
           onChatMsg={onChatMsg}
         />}
