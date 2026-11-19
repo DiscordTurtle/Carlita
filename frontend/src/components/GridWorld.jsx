@@ -157,6 +157,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const deathFrameRef = useRef(0)
   const doneRef       = useRef(false)
   const stepSoundTileRef = useRef(null)
+  const stepSoundsRef = useRef(stepSounds)
+  stepSoundsRef.current = stepSounds
 
   const [dying,        setDying]        = useState(false)
   const [deathAnimKey, setDeathAnimKey] = useState(0)
@@ -621,11 +623,11 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             setLitChecks(new Set([key]))
             playSfx('/sounds/achievement.wav', { volume: 0.5 })
           }
-          if (stepSounds[name]) currentStepTile = name
+          if (stepSoundsRef.current[name]) currentStepTile = name
         }
       }
       if (currentStepTile !== stepSoundTileRef.current) {
-        if (currentStepTile) playSfx(stepSounds[currentStepTile], { volume: 0.9 })
+        if (currentStepTile) playSfx(stepSoundsRef.current[currentStepTile], { volume: 0.9 })
         stepSoundTileRef.current = currentStepTile
       }
 
