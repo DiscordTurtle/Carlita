@@ -167,9 +167,11 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     type()
   }
 
-  function handleCustomInteraction(cPhysX) {
+  function handleCustomInteraction(cPhysX, _cPhysY, px, py) {
     const nearTree = Math.abs(cPhysX - (TREE_COL * TILE + TILE / 2)) < TILE * 2.5
-    if (!nearTree) return false
+    const clickOnTree = px >= TREE_COL * TILE && px < (TREE_COL + 1) * TILE &&
+                        py >= (TREE_ROW - 1) * TILE && py < (TREE_ROW + 1) * TILE
+    if (!nearTree || !clickOnTree) return false
 
     const tool = selToolRef.current
     const ts   = treeStateRef.current
