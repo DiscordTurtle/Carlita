@@ -12,8 +12,8 @@ const CRIS_COL      = 51
 const GROUND_ROW    = 26
 const CRIS_H_TILES  = 1.1
 
-const LETTER_DROP_COL    = TREE_COL - 0.6
-const ANEMONITE_DROP_COL = TREE_COL + 0.9
+const LETTER_DROP_COL    = TREE_COL + 0.1
+const ANEMONITE_DROP_COL = TREE_COL + 0.55
 
 const CRIS_MSG1 = "Of soricel, iti pregatisem un cadou asa de frumos, dar mickeymouseul de rape wizard mi-a furat samamnta :("
 const CRIS_MSG2 = "Yeeeey Carlita, ai gasit-o!!!!"
@@ -236,6 +236,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         hideActionMenu
         toolOverride={selectedTool}
         hoverNames={{ 'crystal_tree.png': treeHoverName }}
+        hideTiles={treeState === 'broken' ? [`${TREE_ROW - 1},${TREE_COL}`, `${TREE_ROW},${TREE_COL}`] : []}
       />
 
       {/* Cristian */}

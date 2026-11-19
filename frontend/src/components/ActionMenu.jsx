@@ -15,7 +15,7 @@ const C = {
 const ITEM_NAME = {
   punch:     'Fist',
   seed:      'Crayon Seed',
-  letter:    'Love Letter',
+  letter:    'Birthday Card',
   anemonite: 'Silver Anemonite'
 }
 

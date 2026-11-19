@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [] }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -706,7 +706,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       if (bg) tileEls.push(
         <div key={`b${r}-${c}`} style={{ position:'absolute', left:c*DT, top:r*DT, width:DT, height:DT, ...tileStyle(bg, nbrs(grid,r,c,'bg',bg), DT) }} />
       )
-      if (fg && !removedRef.current.has(`${r},${c}`)) {
+      if (fg && !removedRef.current.has(`${r},${c}`) && !hideTiles.includes(`${r},${c}`)) {
         const isLit  = fg === CHECKPOINT && litRef.current.has(`${r},${c}`)
         const isSeed = fg.endsWith('_seed.png')
         tileEls.push(
