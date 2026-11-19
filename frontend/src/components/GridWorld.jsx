@@ -635,6 +635,17 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         playSfx('/sounds/seed-pickup.mp3', { volume: 0.9 })
       }
 
+      // Door walk-through exit
+      const door = doorRef.current
+      if (door && groundedRef.current &&
+          npx + PLAYER_W > door.c * TILE && npx < (door.c + 1) * TILE &&
+          npy + PLAYER_H >= door.r * TILE && npy < (door.r + 1) * TILE) {
+        doneRef.current = true
+        if (hasOrbRef.current) onComplete?.()
+        else onMenu?.()
+        return
+      }
+
       // Sign tooltip
       let nearMsg = null
       for (const s of signsRef.current) {
