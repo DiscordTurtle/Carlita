@@ -258,9 +258,10 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       {/* Tree overlay: golden tint + letter crown, visible when growing or spliced */}
       <div ref={treeOverlayRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 20, display: 'none' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,210,60,0.35)', borderRadius: 3, border: '1px solid rgba(255,220,0,0.4)' }} />
-        <div style={{ position: 'absolute', top: -22, left: '50%', transform: 'translateX(-50%)', filter: 'drop-shadow(0 0 6px rgba(255,240,150,.9))' }}>
+        <div style={{ position: 'absolute', top: '55%', left: '50%', transform: 'translate(-50%, -50%)', filter: 'drop-shadow(0 0 6px rgba(255,240,150,.9))' }}>
           <img src="/sprites/letter.webp" alt="" draggable={false}
-            style={{ width: 28, imageRendering: 'pixelated', display: 'block' }} />
+            style={{ width: 28, imageRendering: 'pixelated', display: 'block',
+                     filter: 'sepia(0.5) saturate(2.5) hue-rotate(-20deg) brightness(1.3)' }} />
         </div>
       </div>
 
@@ -268,9 +269,9 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       <div ref={letterDropRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 22, display: 'none', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ filter: 'drop-shadow(0 0 8px #FFF3C4)' }}>
           <img src="/sprites/letter.webp" alt="" draggable={false}
-            style={{ width: 26, imageRendering: 'pixelated', display: 'block' }} />
+            style={{ width: 26, imageRendering: 'pixelated', display: 'block',
+                     filter: 'sepia(0.5) saturate(2.5) hue-rotate(-20deg) brightness(1.3)' }} />
         </div>
-        <div style={{ fontSize: 8, color: '#fff', fontWeight: 700, textShadow: '0 0 3px #000,0 0 3px #000' }}>RIDICĂ</div>
       </div>
 
       {/* Dropped anemonite on ground */}
