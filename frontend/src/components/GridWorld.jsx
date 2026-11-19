@@ -855,7 +855,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                 <div key={seedThrowKey}
                   style={{ '--throw-dist': `${seedThrowVec.dist}px`, animation:'seedThrow 0.5s ease-out forwards' }}
                   onAnimationEnd={() => { setSeedThrowAnim(false); setSeedThrowVec(null) }}>
-                  <img src="/sprites/seed.webp" draggable={false} className="pixel"
+                  <img src="/sprites/blocks/all/red_crayon_seed.png" draggable={false} className="pixel"
                     style={{ height: DT * 0.3, width:'auto', maxWidth:'none', imageRendering:'pixelated', display:'block', filter:'drop-shadow(0 0 3px gold)' }} />
                 </div>
               </div>
@@ -978,7 +978,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       {/* Dropped seed — position:fixed in screen space (same pattern as signEl) so it isn't clipped by the camera div's stacking context */}
       {droppedSeed && (
         <div style={{ position:'fixed', left: WIZ_COL * DT - camX + DT * 0.1, top: WIZ_ROW * DT - camY - DT * 1.1, pointerEvents:'none', zIndex:22, display:'flex', flexDirection:'column', alignItems:'center', animation:'seedBob 2s ease-in-out infinite' }}>
-          <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.25, height: DT * 0.25, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
+          <img src="/sprites/blocks/all/red_crayon_seed.png" alt="" className="pixel" style={{ width: DT * 0.25, height: DT * 0.25, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
         </div>
       )}
 

@@ -5,7 +5,7 @@ import React from 'react'
 export default function Seed({ size = 28 }) {
   return (
     <img
-      src="/sprites/seed.webp"
+      src="/sprites/blocks/all/red_crayon_seed.png"
       alt="seed"
       draggable={false}
       className="pixel"
