@@ -357,6 +357,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       setSeedThrowVec({ angle, dist })
       setSeedThrowAnim(true)
       setSeedThrowKey(k => k + 1)
+      playSfx('/sounds/seed-throw.mp3', { volume: 0.7 })
       onCustomInteraction?.(cPhysX, cPhysY, px, py)
       return
     }
