@@ -402,7 +402,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
         scenePath="/scenes/Cristian_Tree.json"
         onComplete={onComplete}
         onMenu={onMenu}
-        hoverNames={{ 'crystal_tree.png': 'Crystal Tree' }}
+        hoverNames={{ 'crystal_tree.png': 'Paper Tree' }}
       />
       {cristianEl}
       {chars}
