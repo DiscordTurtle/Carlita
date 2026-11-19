@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -162,6 +162,9 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [punchAnim,      setPunchAnim]      = useState(false)
   const [punchVec,       setPunchVec]       = useState(null)  // {angle, dist} for stretch fist
   const [punchKey,       setPunchKey]       = useState(0)     // increments each punch to force anim restart
+  const [seedThrowAnim,  setSeedThrowAnim]  = useState(false)
+  const [seedThrowVec,   setSeedThrowVec]   = useState(null)
+  const [seedThrowKey,   setSeedThrowKey]   = useState(0)
   const [wizHp,          setWizHp]          = useState(5)
   const [wizHit,         setWizHit]         = useState(false)
   const [wizDead,        setWizDead]        = useState(false)
@@ -341,9 +344,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const dyTiles = Math.abs(cPhysY - py) / TILE
     if (dxTiles > 2 || dyTiles > 2) return
 
-    if (selectedSlotRef.current !== 'punch') return
-
-    // Punch animation — only fires for in-range clicks
+    const effectiveSlot = toolOverride ?? selectedSlotRef.current
     const flip = facingRef.current === 'right' ? 1 : -1
     const screenCX = px * physScale - cam.x
     const screenCY = py * physScale - cam.y
@@ -351,6 +352,18 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const sdy = localY - screenCY
     const dist = Math.min(Math.sqrt(sdx * sdx + sdy * sdy), DT * 2)
     const angle = Math.atan2(sdy, sdx * flip) * 180 / Math.PI
+
+    if (effectiveSlot === 'seed') {
+      setSeedThrowVec({ angle, dist })
+      setSeedThrowAnim(true)
+      setSeedThrowKey(k => k + 1)
+      onCustomInteraction?.(cPhysX, cPhysY, px, py)
+      return
+    }
+
+    if (effectiveSlot !== 'punch') return
+
+    // Punch animation — only fires for in-range clicks
     setPunchVec({ angle, dist })
     setPunchAnim(true)
     setPunchKey(k => k + 1)
@@ -814,6 +827,17 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
                   pointerEvents:'none',
                 }}
               />
+            )}
+            {/* Seed flies from hand toward target */}
+            {seedThrowAnim && !dying && seedThrowVec && (
+              <div style={{ position:'absolute', top:'40%', left:'50%', transformOrigin:'0 50%', transform:`rotate(${seedThrowVec.angle}deg)`, pointerEvents:'none', zIndex:10 }}>
+                <div key={seedThrowKey}
+                  style={{ '--throw-dist': `${seedThrowVec.dist}px`, animation:'seedThrow 0.5s ease-out forwards' }}
+                  onAnimationEnd={() => { setSeedThrowAnim(false); setSeedThrowVec(null) }}>
+                  <img src="/sprites/seed.webp" draggable={false} className="pixel"
+                    style={{ height: DT * 0.3, width:'auto', maxWidth:'none', imageRendering:'pixelated', display:'block', filter:'drop-shadow(0 0 3px gold)' }} />
+                </div>
+              </div>
             )}
             {/* Fist stretches from hand toward click point */}
             {punchAnim && !dying && punchVec && (

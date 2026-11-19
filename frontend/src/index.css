@@ -356,6 +356,11 @@ img { image-rendering: pixelated; image-rendering: crisp-edges; }
   65%  { transform: scaleX(1); }
   100% { transform: scaleX(0.05); }
 }
+@keyframes seedThrow {
+  from { transform: translateX(0);                     opacity: 1; }
+  70%  { transform: translateX(var(--throw-dist));     opacity: 1; }
+  to   { transform: translateX(var(--throw-dist));     opacity: 0; }
+}
 
 @keyframes cageBurst {
   0%   { transform: scale(1)    rotate(0deg);   opacity: 1; }

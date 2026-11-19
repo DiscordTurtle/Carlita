@@ -232,6 +232,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         onChatMsg={onChatMsg}
         onCustomInteraction={handleCustomInteraction}
         hideActionMenu
+        toolOverride={selectedTool}
         hoverNames={{ 'crystal_tree.png': treeHoverName }}
       />
 
