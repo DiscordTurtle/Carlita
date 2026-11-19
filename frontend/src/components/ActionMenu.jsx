@@ -14,7 +14,7 @@ const C = {
 // Display names for each inventory item — shown in the tooltip above the bar.
 const ITEM_NAME = {
   punch:     'Fist',
-  seed:      'Love Seed',
+  seed:      'Crayon Seed',
   letter:    'Love Letter',
   anemonite: 'Silver Anemonite'
 }

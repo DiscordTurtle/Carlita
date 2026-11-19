@@ -212,10 +212,10 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   }
 
   const treeHoverName =
-    treeState === 'spliced' ? 'Crystal Tree (Splicuit)' :
-    treeState === 'growing' ? 'Crystal Tree (Creste...)' :
-    treeState === 'broken'  ? 'Crystal Tree (Recoltat)' :
-    'Crystal Tree'
+    treeState === 'spliced' ? 'Birthday Card Tree' :
+    treeState === 'growing' ? 'Paper Tree (Creste...)' :
+    treeState === 'broken'  ? 'Birthday Card Tree (Recoltat)' :
+    'Paper Tree'
 
   const RoFlag = () => (
     <span style={{ display:'inline-flex', width:16, height:11, marginRight:4, verticalAlign:'middle', border:'1px solid rgba(0,0,0,0.4)', borderRadius:1, overflow:'hidden', flexShrink:0 }}>

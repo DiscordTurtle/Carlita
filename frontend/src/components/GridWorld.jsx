@@ -749,7 +749,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           const row = Math.floor((e.clientY - rect.top  + camRef.current.y) / (TILE * tileScale))
           const fg = getFg(scene.grid, row, col)
           const name = fg && hoverNames[fg] ? hoverNames[fg] : null
-          setHoverInfo(name ? { name, left: e.clientX, top: e.clientY } : null)
+          const DT = TILE * tileScale
+          setHoverInfo(name ? { name, left: col * DT - camRef.current.x + DT / 2, top: row * DT - camRef.current.y - 48 } : null)
         }
       }}
       onMouseUp={() => { heldPunchRef.current = false }}
@@ -964,7 +965,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       {!hideActionMenu && <ActionMenu selected={selectedSlot} onSelect={selectSlot} hasSeed={seedInInventory} hasLetter={false} />}
 
       {hoverInfo && (
-        <div style={{ position:'fixed', left: hoverInfo.left + 14, top: hoverInfo.top - 36, background:'rgba(0,0,0,0.75)', color:'#fff', padding:'3px 10px', borderRadius:4, fontSize:13, fontWeight:700, pointerEvents:'none', zIndex:50, whiteSpace:'nowrap', border:'1px solid rgba(255,255,255,0.18)', fontFamily:'"Century Gothic",sans-serif', textShadow:'1px 1px 0 #000' }}>
+        <div style={{ position:'fixed', left: hoverInfo.left, top: hoverInfo.top, transform:'translateX(-50%)', background:'#1a0d2e', color:'#c090ff', border:'2px solid #7030c0', padding:'5px 14px', borderRadius:4, fontSize:13, fontWeight:700, pointerEvents:'none', zIndex:50, whiteSpace:'nowrap', fontFamily:'"Century Gothic",sans-serif', textShadow:'1px 1px 0 #000' }}>
           {hoverInfo.name}
         </div>
       )}
