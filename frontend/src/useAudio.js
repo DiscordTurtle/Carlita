@@ -32,7 +32,7 @@ export function subscribeToMasterVolume(listener) {
   return () => volumeListeners.delete(listener)
 }
 
-export function playSfx(src, { volume = 0.7, rate = 1, startTime = 0 } = {}) {
+export function playSfx(src, { volume = 0.7, rate = 1, startTime = 0, duration } = {}) {
   try {
     const effectiveVolume = clampVolume(volume * masterVolume)
     const base = getAudio(src, effectiveVolume)
@@ -41,6 +41,7 @@ export function playSfx(src, { volume = 0.7, rate = 1, startTime = 0 } = {}) {
     a.playbackRate = rate
     if (startTime) a.currentTime = startTime
     a.play().catch(() => {})
+    if (duration) setTimeout(() => { try { a.pause() } catch {} }, duration * 1000)
   } catch {}
 }
 
