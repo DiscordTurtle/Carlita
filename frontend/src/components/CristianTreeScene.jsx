@@ -21,7 +21,7 @@ const STEPS = [
 // Tile-space constants (DT-independent, converted in RAF using window.__gCam.dt)
 const GROUND_ROW    = 26
 const CRIS_COL      = 43   // one tile left of weather machine (col 44)
-const CRIS_H_TILES  = 0.875  // matches PLAYER_H/TILE (28/32) from GridWorld
+const CRIS_H_TILES  = 1.0
 const WIZARD_H_TILES = 3   // Wizard = 3 tiles tall
 
 // Wizard animation in tile-col/row space
