@@ -47,6 +47,8 @@ export function playSfx(src, { volume = 0.7, rate = 1, startTime = 0, duration }
 
 let _bgAudio = null
 export function registerBgAudio(a) { _bgAudio = a }
+export function pauseBgMusic() { if (_bgAudio) _bgAudio.pause() }
+export function resumeBgMusic() { if (_bgAudio) _bgAudio.play().catch(() => {}) }
 export function swapBgMusic(src) {
   if (!_bgAudio) return
   _bgAudio.pause()
