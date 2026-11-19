@@ -218,7 +218,6 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
       const crisDX    = CRIS_COL * DT
       const crisDispH = CRIS_H_TILES * DT
-      const crisDY    = (GROUND_ROW - CRIS_H_TILES) * DT - cam.y - 80
 
       // Cristian — always visible in phase-3 (cinematicDone), phase-gated in cinematic
       if (crisRef.current) {
@@ -241,7 +240,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
         bubbleRef.current.style.display = show ? 'block' : 'none'
         if (show) {
           bubbleRef.current.style.left = `${crisDX + DT / 2 - cam.x}px`
-          bubbleRef.current.style.top  = `${crisDY - cam.y}px`
+          bubbleRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y - 80}px`
           bubbleRef.current.querySelector('span')
           // Update text
           const textEl = bubbleRef.current.querySelector('.bubble-text')
