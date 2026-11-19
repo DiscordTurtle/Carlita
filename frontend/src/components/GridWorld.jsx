@@ -913,13 +913,6 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           </svg>}
         </>)}
 
-        {/* Dropped seed — appears at wizard's feet after defeat, picked up by walking over */}
-        {droppedSeed && (
-          <div style={{ position:'absolute', left: WIZ_COL * DT + DT * 0.1, top: WIZ_ROW * DT - DT * 1.1, pointerEvents:'none', zIndex:22, display:'flex', flexDirection:'column', alignItems:'center', animation:'seedBob 2s ease-in-out infinite' }}>
-            <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.5, height: DT * 0.5, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
-          </div>
-        )}
-
         {/* Speech bubble above Cristian after being freed */}
         {crisFreeMsgChars > 0 && (
           <div style={{ position:'absolute', left:(WIZ_COL-2)*DT+DT/2, top:WIZ_ROW*DT-DT*1.4, transform:'translateX(-50%) translateY(-100%)', pointerEvents:'none', zIndex:25, whiteSpace:'nowrap', textAlign:'center' }}>
@@ -935,6 +928,13 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       </div>
 
       {signEl}
+
+      {/* Dropped seed — position:fixed in screen space (same pattern as signEl) so it isn't clipped by the camera div's stacking context */}
+      {droppedSeed && (
+        <div style={{ position:'fixed', left: WIZ_COL * DT - camX + DT * 0.1, top: WIZ_ROW * DT - camY - DT * 1.1, pointerEvents:'none', zIndex:22, display:'flex', flexDirection:'column', alignItems:'center', animation:'seedBob 2s ease-in-out infinite' }}>
+          <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.5, height: DT * 0.5, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
+        </div>
+      )}
 
       {/* Orb in inventory */}
       {hasOrb && (
