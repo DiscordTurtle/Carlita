@@ -103,7 +103,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         treeOverlayRef.current.style.left  = `${TREE_COL * DT - cam.x}px`
         treeOverlayRef.current.style.top   = `${(TREE_ROW - 1) * DT - cam.y}px`
         treeOverlayRef.current.style.width  = `${DT}px`
-        treeOverlayRef.current.style.height = `${2 * DT}px`
+        treeOverlayRef.current.style.height = `${DT}px`
       }
 
       if (crisBubbleRef.current) {
@@ -242,7 +242,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         toolOverride={selectedTool}
         hoverNames={{ 'crystal_tree.png': treeHoverName }}
         stepSounds={{ 'house_entrance.png': '/sounds/door-open.mp3' }}
-        hideTiles={treeState === 'broken' ? [`${TREE_ROW - 1},${TREE_COL}`, `${TREE_ROW},${TREE_COL}`] : []}
+        hideTiles={treeState !== 'normal' ? [`${TREE_ROW - 1},${TREE_COL}`, `${TREE_ROW},${TREE_COL}`] : []}
       />
 
       {/* Cristian */}
