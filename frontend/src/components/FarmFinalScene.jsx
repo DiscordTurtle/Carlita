@@ -10,7 +10,7 @@ const TREE_COL      = 50
 const TREE_ROW      = 25
 const CRIS_COL      = 51
 const GROUND_ROW    = 26
-const CRIS_H_TILES  = 0.875
+const CRIS_H_TILES  = 1.0
 
 const LETTER_DROP_COL    = TREE_COL - 0.6
 const ANEMONITE_DROP_COL = TREE_COL + 0.9
@@ -85,8 +85,9 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       const DT = cam.dt
 
       if (crisRef.current) {
-        crisRef.current.style.left = `${CRIS_COL * DT - cam.x}px`
-        crisRef.current.style.top  = `${(GROUND_ROW - CRIS_H_TILES) * DT - cam.y}px`
+        crisRef.current.style.left   = `${CRIS_COL * DT - cam.x}px`
+        crisRef.current.style.bottom = `${window.innerHeight - GROUND_ROW * DT + cam.y}px`
+        crisRef.current.style.top    = ''
         const img = crisRef.current.querySelector('img')
         if (img) img.style.height = `${CRIS_H_TILES * DT}px`
       }
