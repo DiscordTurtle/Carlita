@@ -873,7 +873,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             alt=""
             className="pixel"
             style={{
-              height: DT * 0.875, width:'auto', maxWidth:'none', display:'block',
+              height: DT * 1.0, width:'auto', maxWidth:'none', display:'block',
               filter:'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))',
               animation: crisPoofing ? 'crisPoof 0.6s ease-out forwards' : cristianFree ? undefined : 'crisStruggle 1.4s ease-in-out infinite',
               transformOrigin: 'bottom center',
@@ -932,7 +932,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       {/* Dropped seed — position:fixed in screen space (same pattern as signEl) so it isn't clipped by the camera div's stacking context */}
       {droppedSeed && (
         <div style={{ position:'fixed', left: WIZ_COL * DT - camX + DT * 0.1, top: WIZ_ROW * DT - camY - DT * 1.1, pointerEvents:'none', zIndex:22, display:'flex', flexDirection:'column', alignItems:'center', animation:'seedBob 2s ease-in-out infinite' }}>
-          <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.5, height: DT * 0.5, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
+          <img src="/sprites/seed.webp" alt="" className="pixel" style={{ width: DT * 0.25, height: DT * 0.25, imageRendering:'pixelated', filter:'drop-shadow(0 0 8px #ffe066) drop-shadow(-1px 2px 0 rgba(0,0,0,0.6))' }} />
         </div>
       )}
 

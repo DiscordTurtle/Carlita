@@ -10,7 +10,7 @@ const TREE_COL      = 50
 const TREE_ROW      = 25
 const CRIS_COL      = 51
 const GROUND_ROW    = 26
-const CRIS_H_TILES  = 1.0
+const CRIS_H_TILES  = 1.1
 
 const LETTER_DROP_COL    = TREE_COL - 0.6
 const ANEMONITE_DROP_COL = TREE_COL + 0.9
