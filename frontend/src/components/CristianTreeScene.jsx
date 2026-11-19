@@ -44,17 +44,10 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const isFadingOutRef    = useRef(false)
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
-  const firstVisitRef = useRef(firstVisit)  // lock mount-time value; prop changes after cinematic end
-
   useEffect(() => {
     swapBgMusic('/sounds/farm-theme.mp3')
-    if (firstVisitRef.current) muteBgMusic()
     return () => swapBgMusic('/sounds/theme.mp3')
   }, [])
-
-  useEffect(() => {
-    if (cinematicDone && firstVisitRef.current) unmuteBgMusic()
-  }, [cinematicDone])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
   const crisRef     = useRef(null)
@@ -91,6 +84,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   // then continues 10 s after video ends with a linear fade-out
   useEffect(() => {
     if (phase !== 'battle') return
+    muteBgMusic()
     if (battleFadeRef.current) { clearInterval(battleFadeRef.current); battleFadeRef.current = null }
     isFadingOutRef.current = false
     const a = new Audio('/sounds/tiki_tiki.mp3')
@@ -103,6 +97,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
     a.play().catch(() => {})
     battleAudioRef.current = a
     return () => {
+      unmuteBgMusic()
       // Phase left 'battle': keep playing but fade out over 10 s
       const startVol = a.volume
       const startTime = Date.now()
