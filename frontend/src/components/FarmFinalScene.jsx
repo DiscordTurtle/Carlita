@@ -101,7 +101,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         const ts = treeStateRef.current
         treeOverlayRef.current.style.display = (ts === 'spliced' || ts === 'growing') ? 'block' : 'none'
         treeOverlayRef.current.style.left  = `${TREE_COL * DT - cam.x}px`
-        treeOverlayRef.current.style.top   = `${(TREE_ROW - 1) * DT - cam.y}px`
+        treeOverlayRef.current.style.top   = `${TREE_ROW * DT - cam.y}px`
         treeOverlayRef.current.style.width  = `${DT}px`
         treeOverlayRef.current.style.height = `${DT}px`
       }
