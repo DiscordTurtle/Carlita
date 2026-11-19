@@ -218,6 +218,7 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
       const crisDX    = CRIS_COL * DT
       const crisDispH = CRIS_H_TILES * DT
+      const crisDY    = (GROUND_ROW - CRIS_H_TILES) * DT - cam.y - 80
 
       // Cristian — always visible in phase-3 (cinematicDone), phase-gated in cinematic
       if (crisRef.current) {
