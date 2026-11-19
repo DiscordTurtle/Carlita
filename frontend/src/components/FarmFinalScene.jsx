@@ -221,7 +221,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const treeHoverName =
     treeState === 'spliced' ? 'Birthday Card Tree' :
     treeState === 'growing' ? 'Paper Tree (Creste...)' :
-    treeState === 'broken'  ? 'Birthday Card Tree (Recoltat)' :
+    treeState === 'broken'  ? null :
     'Paper Tree'
 
   const RoFlag = () => (
