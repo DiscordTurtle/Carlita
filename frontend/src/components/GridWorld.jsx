@@ -179,7 +179,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const [cageGone,          setCageGone]          = useState(false)
   const [cristianGone,      setCristianGone]      = useState(false)
   const [crisPoofing,       setCrisPoofing]       = useState(false)
-  const crisFreeTsRef = useRef(null)
+  const crisFreeTsRef  = useRef(null)
+  const crisLeaveIdRef = useRef(null)
 
   const wizHpRef        = useRef(5)
   const wizDeadRef      = useRef(false)
@@ -374,7 +375,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       setSeedThrowVec({ angle, dist })
       setSeedThrowAnim(true)
       setSeedThrowKey(k => k + 1)
-      playSfx('/sounds/seed-throw.mp3', { volume: 0.7 })
+      playSfx('/sounds/seed-throw.mp3', { volume: 0.7, duration: 0.885 })
       onCustomInteraction?.(cPhysX, cPhysY, px, py)
       return
     }
@@ -456,7 +457,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     if (done) {
       crisFreeTsRef.current = null
       const bubbleId = setTimeout(() => setCrisFreeMsgChars(0), 2000)
-      const leaveId  = setTimeout(() => {
+      crisLeaveIdRef.current = setTimeout(() => {
         setCrisPoofing(true)
         setTimeout(() => {
           playSfx('/sounds/door-slam.mp3', { volume: 1.0 })
@@ -465,7 +466,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           setCristianGone(true)
         }, 600)
       }, 3000)
-      return () => { clearTimeout(bubbleId); clearTimeout(leaveId) }
+      return () => clearTimeout(bubbleId)
     }
     const id = setTimeout(() => setCrisFreeMsgChars(n => n + 1), 38)
     return () => clearTimeout(id)
