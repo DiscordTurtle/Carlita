@@ -481,7 +481,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     setHp(0)
     setDying(true)
     setDeathAnimKey(k => k + 1)
-    playSfx('/sounds/death.mp3', { volume: 1.3, startTime: 0.3 })
+    playSfx('/sounds/death.mp3', { volume: 2.0 })
   }
 
   function applyLavaDamage() {
