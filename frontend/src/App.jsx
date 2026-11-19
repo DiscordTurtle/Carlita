@@ -4,7 +4,7 @@ import FarmFinalScene from './components/FarmFinalScene.jsx'
 import WorldSelector from './components/WorldSelector.jsx'
 import GridWorld from './components/GridWorld.jsx'
 import CristianTreeScene from './components/CristianTreeScene.jsx'
-import { getMasterVolume, playSfx, subscribeToMasterVolume } from './useAudio.js'
+import { getMasterVolume, playSfx, subscribeToMasterVolume, registerBgAudio } from './useAudio.js'
 
 // Screens: 'title' → 'worldselect' → 'cristiantree' → 'worldselect' → 'parkour' (pick seed) → 'worldselect' → 'game'
 const SPLIT_DURATION_MS = 3300
@@ -170,6 +170,7 @@ export default function App() {
     a.loop = true
     a.volume = 0.35 * getMasterVolume()
     audioRef.current = a
+    registerBgAudio(a)
     a.play().catch(() => {})
 
     const updateVolume = () => { if (a) a.volume = 0.35 * getMasterVolume() }

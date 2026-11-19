@@ -44,6 +44,17 @@ export function playSfx(src, { volume = 0.7, rate = 1, startTime = 0 } = {}) {
   } catch {}
 }
 
+let _bgAudio = null
+export function registerBgAudio(a) { _bgAudio = a }
+export function swapBgMusic(src) {
+  if (!_bgAudio) return
+  _bgAudio.pause()
+  _bgAudio.src = src
+  _bgAudio.loop = true
+  _bgAudio.volume = 0.35 * masterVolume
+  _bgAudio.play().catch(() => {})
+}
+
 export function useMusic(src, { enabled, volume = 0.35 }) {
   const ref = useRef(null)
   useEffect(() => {

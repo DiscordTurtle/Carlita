@@ -3,7 +3,7 @@ import GridWorld from './GridWorld.jsx'
 import Fireworks from './Fireworks.jsx'
 import LetterModal from './LetterModal.jsx'
 import ActionMenu from './ActionMenu.jsx'
-import { playSfx } from '../useAudio.js'
+import { playSfx, swapBgMusic } from '../useAudio.js'
 
 const TILE          = 32
 const TREE_COL      = 50
@@ -19,6 +19,10 @@ const CRIS_MSG1 = "Of soricel, iti pregatisem un cadou asa de frumos, dar mickey
 const CRIS_MSG2 = "Yeeeey Carlita, ai gasit-o!!!!"
 
 export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
+  useEffect(() => {
+    swapBgMusic('/sounds/farm-theme.mp3')
+    return () => swapBgMusic('/sounds/theme.mp3')
+  }, [])
   const handleDoor = () => { playSfx('/sounds/door-open.mp3', { volume: 0.9 }); onMenu?.() }
   const [treeState,         setTreeState]         = useState('normal')
   const [selectedTool,      setSelectedTool]      = useState(hasSeed ? 'seed' : 'punch')
