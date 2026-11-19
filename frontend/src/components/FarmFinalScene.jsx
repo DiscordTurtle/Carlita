@@ -19,6 +19,7 @@ const CRIS_MSG1 = "Of soricel, iti pregatisem un cadou asa de frumos, dar mickey
 const CRIS_MSG2 = "Yeeeey Carlita, ai gasit-o!!!!"
 
 export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
+  const handleDoor = () => { playSfx('/sounds/door-open.mp3', { volume: 0.9 }); onMenu?.() }
   const [treeState,         setTreeState]         = useState('normal')
   const [selectedTool,      setSelectedTool]      = useState(hasSeed ? 'seed' : 'punch')
   const [seedInHand,        setSeedInHand]        = useState(hasSeed)
@@ -229,8 +230,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     <div style={{ position: 'absolute', inset: 0 }}>
       <GridWorld
         scenePath="/scenes/Cristian_Farm.json"
-        onMenu={onMenu}
-        onComplete={onMenu}
+        onMenu={handleDoor}
+        onComplete={handleDoor}
         onChatMsg={onChatMsg}
         onCustomInteraction={handleCustomInteraction}
         hideActionMenu
