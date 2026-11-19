@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [] }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [], stepSounds = {} }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -156,6 +156,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const dyingRef      = useRef(false)
   const deathFrameRef = useRef(0)
   const doneRef       = useRef(false)
+  const stepSoundTileRef = useRef(null)
 
   const [dying,        setDying]        = useState(false)
   const [deathAnimKey, setDeathAnimKey] = useState(0)
@@ -608,6 +609,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       const lc = Math.max(0,       Math.floor(npx / TILE))
       const rc = Math.min(COLS-1,  Math.floor((npx + PLAYER_W - 1) / TILE))
 
+      let currentStepTile = null
       for (let r = tr; r <= br; r++) {
         for (let c = lc; c <= rc; c++) {
           const key  = `${r},${c}`
@@ -619,7 +621,12 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             setLitChecks(new Set([key]))
             playSfx('/sounds/achievement.wav', { volume: 0.5 })
           }
+          if (stepSounds[name]) currentStepTile = name
         }
+      }
+      if (currentStepTile !== stepSoundTileRef.current) {
+        if (currentStepTile) playSfx(stepSounds[currentStepTile], { volume: 0.9 })
+        stepSoundTileRef.current = currentStepTile
       }
 
       // Seed pickup: walk over wizard drop
@@ -633,17 +640,6 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         setSelectedSlot('seed')
         onSeedPickup?.()
         playSfx('/sounds/seed-pickup.mp3', { volume: 0.9 })
-      }
-
-      // Door walk-through exit
-      const door = doorRef.current
-      if (door && groundedRef.current &&
-          npx + PLAYER_W > door.c * TILE && npx < (door.c + 1) * TILE &&
-          npy + PLAYER_H >= door.r * TILE && npy < (door.r + 1) * TILE) {
-        doneRef.current = true
-        if (hasOrbRef.current) onComplete?.()
-        else onMenu?.()
-        return
       }
 
       // Sign tooltip

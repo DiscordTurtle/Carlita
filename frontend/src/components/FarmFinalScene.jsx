@@ -241,6 +241,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         hideActionMenu
         toolOverride={selectedTool}
         hoverNames={{ 'crystal_tree.png': treeHoverName }}
+        stepSounds={{ 'house_entrance.png': '/sounds/door-open.mp3' }}
         hideTiles={treeState === 'broken' ? [`${TREE_ROW - 1},${TREE_COL}`, `${TREE_ROW},${TREE_COL}`] : []}
       />
 
