@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AUTOTILE, autotileCSS } from '../autotile.js'
-import { getMasterVolume, playSfx, setMasterVolume as setAudioVolume, subscribeToMasterVolume } from '../useAudio.js'
+import { getMasterVolume, playSfx, setMasterVolume as setAudioVolume, subscribeToMasterVolume, swapBgMusic } from '../useAudio.js'
 import GameMenu from './GameMenu.jsx'
 import ActionMenu from './ActionMenu.jsx'
 
@@ -88,7 +88,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [], stepSounds = {} }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [], stepSounds = {}, bgMusic }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -105,6 +105,11 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
   useEffect(() => setAudioVolume(masterVolume), [masterVolume])
   useEffect(() => subscribeToMasterVolume(v => setMasterVolume(v)), [])
+  useEffect(() => {
+    if (!bgMusic) return
+    swapBgMusic(bgMusic)
+    return () => swapBgMusic('/sounds/theme.mp3')
+  }, [bgMusic])
 
   const outerRef      = useRef(null)
   const camRef        = useRef({ x: 0, y: 0 })

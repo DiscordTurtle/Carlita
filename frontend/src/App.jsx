@@ -264,6 +264,7 @@ export default function App() {
           onSeedPickup={() => { setHasSeed(true); setWizardKilled(true); addLog({ t: new Date().toTimeString().slice(0,8), msg: 'You picked up: Crayon Seed.', color: '#80ee80' }) }}
           onMenu={() => { playSfx('/sounds/door-slam.mp3', { volume: 1.0 }); setScreen('worldselect') }}
           onChatMsg={onChatMsg}
+          bgMusic="/sounds/parkour-theme.mp3"
         />}
       {screen === 'cristiantree'  && (
         <CristianTreeScene
