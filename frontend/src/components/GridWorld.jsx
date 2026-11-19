@@ -433,7 +433,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           onChatMsg?.({ t: lt, msg: 'Cristian has left the world.', color: '#80c8a0', done: true, commit: true })
           setCristianGone(true)
         }, 600)
-      }, 5000)
+      }, 3000)
       return () => { clearTimeout(bubbleId); clearTimeout(leaveId) }
     }
     const id = setTimeout(() => setCrisFreeMsgChars(n => n + 1), 38)
