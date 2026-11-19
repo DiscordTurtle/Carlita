@@ -44,14 +44,16 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
   const isFadingOutRef    = useRef(false)
   useEffect(() => { onCinematicEndRef.current = onCinematicEnd }, [onCinematicEnd])
 
+  const firstVisitRef = useRef(firstVisit)  // lock mount-time value; prop changes after cinematic end
+
   useEffect(() => {
     swapBgMusic('/sounds/farm-theme.mp3')
-    if (firstVisit) muteBgMusic()
+    if (firstVisitRef.current) muteBgMusic()
     return () => swapBgMusic('/sounds/theme.mp3')
   }, [])
 
   useEffect(() => {
-    if (cinematicDone && firstVisit) unmuteBgMusic()
+    if (cinematicDone && firstVisitRef.current) unmuteBgMusic()
   }, [cinematicDone])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
