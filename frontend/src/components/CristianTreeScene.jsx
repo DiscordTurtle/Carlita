@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import GridWorld from './GridWorld.jsx'
 import ActionMenu from './ActionMenu.jsx'
-import { getMasterVolume, playSfx, swapBgMusic, pauseBgMusic, resumeBgMusic } from '../useAudio.js'
+import { getMasterVolume, playSfx, swapBgMusic, muteBgMusic, unmuteBgMusic } from '../useAudio.js'
 
 const WIZARD_SPR   = '/sprites/blocks/all/legendary_wizard.png'
 const CRISTIAN_SPR = '/sprites/cristian.png'
@@ -46,12 +46,12 @@ export default function CristianTreeScene({ onComplete, onMenu, firstVisit = tru
 
   useEffect(() => {
     swapBgMusic('/sounds/farm-theme.mp3')
-    if (firstVisit) pauseBgMusic()
+    if (firstVisit) muteBgMusic()
     return () => swapBgMusic('/sounds/theme.mp3')
   }, [])
 
   useEffect(() => {
-    if (cinematicDone && firstVisit) resumeBgMusic()
+    if (cinematicDone && firstVisit) unmuteBgMusic()
   }, [cinematicDone])
 
   // Refs for direct DOM positioning (bypasses React for 60fps camera sync)
