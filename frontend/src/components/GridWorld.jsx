@@ -62,30 +62,30 @@ const ORB_MSG =
   '— Cristian'
 
 const WIZ_MSGS = [
-  'Te voi atinge, micule bro! Unde tineti toate wl-urile?',
-  'Muahahaha, vei ramane in cusca pentru eternitate!',
-  'Hahahaha, nici nu stii ce te asteapta!',
-  'Sunt puternic, mai puternic decat voi! SUNT FOARTE PUTERNIC! (SI MALEFIC)',
-  'Toata lumea fuge de XxRapeWizardxX!',
-  'Doneaza un wl si il eliberez pe prietenul tau. Poate.',
-  'Cage-ul asta e enchanted, micutule! Nu mai incerca.',
-  'Hai o data ca mi-au crescut copacii de sugarcane si ma cearta mami daca nu vin la masa!',
-  'Daca nu vii mai repede, il pun la farmat sugarcane!',
+  'Te voi atinge, micule bro! Unde țineți toate wl-urile?',
+  'Muahahaha, vei rămâne în cușcă pentru eternitate!',
+  'Hahahaha, nici nu știi ce te așteaptă!',
+  'Sunt puternic, mai puternic decât voi! SUNT FOARTE PUTERNIC! (ȘI MALEFIC)',
+  'Toată lumea fuge de XxRapeWizardxX!',
+  'Donează un wl și îl eliberez pe prietenul tău. Poate.',
+  'Cage-ul ăsta e enchanted, micuțule! Nu mai încerca.',
+  'Hai odată că mi-au crescut copacii de sugarcane și mă ceartă mami dacă nu vin la masă!',
+  'Dacă nu vii mai repede, îl pun la farmat sugarcane!',
   'Am 400 wl-uri. Tu ai? Nu, nu ai.',
-  'Vrei sa il salvezi? Te speli? Ai parinti? Esti orfan?',
+  'Vrei să îl salvezi? Te speli? Ai părinți? Ești orfan?',
 
-  'Vrei sa vezi ce am sub capotul asta mov?',
+  'Vrei să vezi ce am sub capotul ăsta mov?',
 ]
-const WIZ_CAPOT_MSG = 'Vrei sa vezi ce am sub capotul asta mov?'
+const WIZ_CAPOT_MSG = 'Vrei să vezi ce am sub capotul ăsta mov?'
 
 const CRIS_AM_MSGS = [
-  'Wtf Carlita m-a inhatat vrajitorul ca pe Shalom :((',
-  'Vino suanrece repede ca ma face nub :(',
-  'Vrajitorul asta inca farmeaza corali si sugarcane in 2026, ce nub!',
-  'Suarece, barbosul asta cred ca are hec',
-  'Oare e mod? dc e broul asa mare? :(',
-  'Onkeyy, banan are nevoie de niste ajutor :(',
-  'Fugi cu wl-urile suarice, lasa-ma pe mine aici ca oricum sunt pooron! WTF NEVERMIND SE TRAGE DE CAPOT, VINO REPEDE!'
+  'Wtf Carlita m-a înhățat vrăjitorul ca pe Shalom :((',
+  'Vino suarece repede că mă face nub :(',
+  'Vrăjitorul ăsta încă farmează corali și sugarcane în 2026, ce nub!',
+  'Suarece, bărbosul ăsta cred că are hec',
+  'Oare e mod? dc e broul așa mare? :(',
+  'Onkeyy, banan are nevoie de niște ajutor :(',
+  'Fugi cu wl-urile suarice, lasă-mă pe mine aici că oricum sunt pooron! WTF NEVERMIND SE TRAGE DE CAPOT, VINO REPEDE!'
 ]
 
 const BASE_URL = '/sprites/blocks/all/'
@@ -285,8 +285,8 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             if (fg === 'legendary_wizard.png') initRemoved.add(`${r},${c}`)
           }
         }
-        // shortcut: spawn at last checkpoint for testing, revert to door spawn when done
-        if (lastCheckSpawn) spawn = lastCheckSpawn
+        // shortcut: spawn at last checkpoint for testing — disabled, door spawn is live
+        // if (lastCheckSpawn) spawn = lastCheckSpawn
         removedRef.current = initRemoved
         setRemoved(new Set(initRemoved))
 
@@ -550,7 +550,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     return () => { clearInterval(wizId); clearInterval(crisId) }
   }, [scene, wizDead])
 
-  const WIZ_DEATH_MSG = 'NUUUUUUUUUUUUUUUUUUUU, ERAM ATAT DE APROAPE SA DEVIN PRO!!!'
+  const WIZ_DEATH_MSG = 'NUUUUUUUUUUUUUUUUUUUU, ERAM ATÂT DE APROAPE SĂ DEVIN PRO!!!'
   useEffect(() => {
     if (!wizAmTsRef.current || wizAmChars === 0) return
     const msg = wizAmMsgRef.current

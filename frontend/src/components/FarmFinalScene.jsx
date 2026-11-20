@@ -15,11 +15,11 @@ const CRIS_H_TILES  = 1.1
 const LETTER_DROP_COL    = TREE_COL + 0.1
 const ANEMONITE_DROP_COL = TREE_COL + 0.55
 
-const CRIS_MSG1 = "Of soricel, iti pregatisem un cadou asa de frumos, dar mickeymouseul de rape wizard mi-a furat samamnta :("
-const CRIS_MSG2 = "Yeeeey Carlita, ai gasit-o!!!!"
-const CRIS_ANEM1 = "Probabil te intrebi ce e asta"
-const CRIS_ANEM2 = "La multi ani, suarece drag!"
-const CRIS_LETTER_ERR = "Of, mereu bugurile astea ... bine ca am un backup ❤️ "
+const CRIS_MSG1 = "Of șoricel, îți pregătisem un cadou așa de frumos, dar mickeymouseul de rape wizard mi-a furat sămânța :("
+const CRIS_MSG2 = "Yeeeey Carlita, ai găsit-o!!!!"
+const CRIS_ANEM1 = "Probabil te întrebi ce e ăsta"
+const CRIS_ANEM2 = "La mulți ani, suarece drag!"
+const CRIS_LETTER_ERR = "Of, mereu bugurile astea ... bine că am un backup ❤️ "
 
 export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   useEffect(() => {
