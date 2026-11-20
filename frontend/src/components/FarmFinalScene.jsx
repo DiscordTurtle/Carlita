@@ -172,10 +172,10 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     type()
   }
 
-  function handleCustomInteraction(cPhysX, _cPhysY, px, py) {
-    const nearTree = Math.abs(cPhysX - (TREE_COL * TILE + TILE / 2)) < TILE * 2.5
-    const clickOnTree = px >= TREE_COL * TILE && px < (TREE_COL + 1) * TILE &&
-                        py >= (TREE_ROW - 1) * TILE && py < (TREE_ROW + 1) * TILE
+  function handleCustomInteraction(cPhysX, cPhysY, px) {
+    const nearTree = Math.abs(px - (TREE_COL * TILE + TILE / 2)) < TILE * 3
+    const clickOnTree = cPhysX >= TREE_COL * TILE && cPhysX < (TREE_COL + 1) * TILE &&
+                        cPhysY >= (TREE_ROW - 1) * TILE && cPhysY < (TREE_ROW + 1) * TILE
     if (!nearTree || !clickOnTree) return false
 
     const tool = selToolRef.current
@@ -275,7 +275,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       </div>
 
       {/* Dropped letter on ground */}
-      <div ref={letterDropRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 22, display: 'none', flexDirection: 'column', alignItems: 'center' }}>
+      <div ref={letterDropRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 22, display: 'none', flexDirection: 'column', alignItems: 'center', animation: 'seedBob 2s ease-in-out infinite' }}>
         <div style={{ filter: 'drop-shadow(0 0 8px #FFF3C4)' }}>
           <img src="/sprites/letter.webp" alt="" draggable={false}
             style={{ width: 26, imageRendering: 'pixelated', display: 'block',
@@ -284,7 +284,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       </div>
 
       {/* Dropped anemonite on ground */}
-      <div ref={anemDropRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 22, display: 'none', flexDirection: 'column', alignItems: 'center' }}>
+      <div ref={anemDropRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 22, display: 'none', flexDirection: 'column', alignItems: 'center', animation: 'seedBob 2s ease-in-out infinite' }}>
         <div style={{ filter: 'drop-shadow(0 0 6px rgba(200,230,255,.9))' }}>
           <img src="/sprites/blocks/all/anemone.png" alt="" draggable={false}
             style={{ width: 26, imageRendering: 'pixelated', display: 'block',

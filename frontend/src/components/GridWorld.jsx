@@ -61,6 +61,30 @@ const ORB_MSG =
   'cu înmulțit un copac magic. Adu-ți sămânța! 🌱\n\n' +
   '— Cristian'
 
+const WIZ_MSGS = [
+  'Te voi atinge, micule bro! Unde tineti toate wl-urile?',
+  'Muahahaha, vei ramane in cusca pentru eternitate!',
+  'Hahahaha, nici nu stii ce te asteapta!',
+  'Eram level 50 in lumea asta cand tu inca plantai iarba!',
+  'Toata lumea fuge de XxRapeWizardxX!',
+  'Doneaza o wl si il eliberez pe prietenul tau. Poate.',
+  'Cage-ul asta e enchanted, micuta! Nu mai incerca.',
+  'Stii ce-mi place mie? Coral si sugarcane! Profit pur.',
+  'Daca nu vii mai repede, il fac noob de tot!',
+  'Am 400 wl-uri. Tu ai? Nu, nu ai.',
+  'Hai, mai repede! Vrei sa-l salvezi sau nu?',
+  'Vrei sa vezi ce am sub capotul asta mov?',
+]
+const WIZ_CAPOT_MSG = 'Vrei sa vezi ce am sub capotul asta mov?'
+
+const CRIS_AM_MSGS = [
+  'Wtf Carlita m-a inhatat vrajitorul ca pe Shalom :((',
+  'Vino suanrece repede ca ma face nub :(',
+  'Vrajitorul asta inca farmeaza corali si sugarcane, ce nub',
+  'Suarece, barbosul asta cred ca are hec',
+  'Onkeyy, banan are nevoie de niste ajutor :(',
+]
+
 const BASE_URL = '/sprites/blocks/all/'
 
 function getFg(grid, r, c) {
@@ -190,6 +214,17 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
   const wizHpRef        = useRef(5)
   const wizDeadRef      = useRef(false)
   const cristianFreeRef = useRef(false)
+
+  const [wizAmChars,  setWizAmChars]  = useState(0)
+  const wizAmMsgRef   = useRef('')
+  const wizAmTsRef    = useRef(null)
+  const wizLastIdxRef = useRef(-1)
+
+  const [crisAmChars, setCrisAmChars] = useState(0)
+  const crisAmMsgRef  = useRef('')
+  const crisAmTsRef   = useRef(null)
+  const crisLastIdxRef = useRef(-1)
+  const capotPendingRef = useRef(false)
 
   const [droppedSeed,     setDroppedSeed]     = useState(false)
   const droppedSeedRef    = useRef(false)
@@ -476,6 +511,70 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     const id = setTimeout(() => setCrisFreeMsgChars(n => n + 1), 38)
     return () => clearTimeout(id)
   }, [crisFreeMsgChars])
+
+  // Wizard ambient messages — every 5s while alive
+  useEffect(() => {
+    if (!scene || wizDead) return
+    function startWizMsg() {
+      if (wizAmTsRef.current || wizDeadRef.current) return
+      let idx
+      do { idx = Math.floor(Math.random() * WIZ_MSGS.length) } while (idx === wizLastIdxRef.current && WIZ_MSGS.length > 1)
+      wizLastIdxRef.current = idx
+      const msg = WIZ_MSGS[idx]
+      wizAmMsgRef.current = msg
+      wizAmTsRef.current = new Date().toTimeString().slice(0, 8)
+      if (msg === WIZ_CAPOT_MSG) capotPendingRef.current = true
+      setWizAmChars(1)
+    }
+    function startCrisMsg() {
+      if (crisAmTsRef.current) return
+      let idx
+      do { idx = Math.floor(Math.random() * CRIS_AM_MSGS.length) } while (idx === crisLastIdxRef.current && CRIS_AM_MSGS.length > 1)
+      crisLastIdxRef.current = idx
+      crisAmMsgRef.current = CRIS_AM_MSGS[idx]
+      crisAmTsRef.current = new Date().toTimeString().slice(0, 8)
+      setCrisAmChars(1)
+    }
+    const wizId  = setInterval(startWizMsg,  5000)
+    const crisId = setInterval(startCrisMsg, 15000)
+    return () => { clearInterval(wizId); clearInterval(crisId) }
+  }, [scene, wizDead])
+
+  useEffect(() => {
+    if (!wizAmTsRef.current || wizAmChars === 0) return
+    const msg = wizAmMsgRef.current
+    const done = wizAmChars >= msg.length
+    onChatMsg?.({ t: wizAmTsRef.current, msg: `** from (XxRapeWizardxX) in [P4rkour] ** : ${msg.slice(0, wizAmChars)}`, color: '#ff9090', icon: '#c060ff', done, commit: done })
+    if (done) {
+      wizAmTsRef.current = null
+      if (capotPendingRef.current) {
+        capotPendingRef.current = false
+        setTimeout(() => {
+          crisAmMsgRef.current = 'NU!'
+          crisAmTsRef.current = new Date().toTimeString().slice(0, 8)
+          setCrisAmChars(1)
+        }, 300)
+      }
+      const id = setTimeout(() => setWizAmChars(0), 3000)
+      return () => clearTimeout(id)
+    }
+    const id = setTimeout(() => setWizAmChars(n => n + 1), 38)
+    return () => clearTimeout(id)
+  }, [wizAmChars])
+
+  useEffect(() => {
+    if (!crisAmTsRef.current || crisAmChars === 0) return
+    const msg = crisAmMsgRef.current
+    const done = crisAmChars >= msg.length
+    onChatMsg?.({ t: crisAmTsRef.current, msg: `[Cristian]: ${msg.slice(0, crisAmChars)}`, color: '#f0c060', icon: '#4a88b8', done, commit: done })
+    if (done) {
+      crisAmTsRef.current = null
+      const id = setTimeout(() => setCrisAmChars(0), 3000)
+      return () => clearTimeout(id)
+    }
+    const id = setTimeout(() => setCrisAmChars(n => n + 1), 38)
+    return () => clearTimeout(id)
+  }, [crisAmChars])
 
   function triggerDeath() {
     if (dyingRef.current) return
@@ -963,6 +1062,30 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
             <path d="M 0,10 C 25,24 55,2 80,14 S 100,10 100,10" stroke="#C47E3A" strokeWidth={2.5} fill="none" strokeLinecap="round" strokeDasharray="5,4" />
           </svg>}
         </>)}
+
+        {/* Wizard ambient speech bubble */}
+        {wizAmChars > 0 && !wizDead && (
+          <div style={{ position:'absolute', left:WIZ_COL*DT+DT/2, top:WIZ_ROW*DT-DT*3-20, transform:'translateX(-50%) translateY(-100%)', pointerEvents:'none', zIndex:25, whiteSpace:'nowrap', textAlign:'center' }}>
+            <div style={{ background:'#fff', color:'#1a0828', border:'2px solid #c060ff', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:700, whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(0,0,0,0.35)', fontFamily:'"Century Gothic",sans-serif' }}>
+              {wizAmMsgRef.current.slice(0, wizAmChars)}
+              {wizAmChars < wizAmMsgRef.current.length && <span style={{ opacity:0.4 }}>|</span>}
+            </div>
+            <div style={{ position:'absolute', bottom:-10, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'8px solid transparent', borderRight:'8px solid transparent', borderTop:'10px solid #c060ff' }} />
+            <div style={{ position:'absolute', bottom:-7, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'7px solid transparent', borderRight:'7px solid transparent', borderTop:'9px solid #fff', zIndex:1 }} />
+          </div>
+        )}
+
+        {/* Cristian ambient speech bubble */}
+        {crisAmChars > 0 && !wizDead && (
+          <div style={{ position:'absolute', left:(WIZ_COL-2)*DT+DT/2, top:WIZ_ROW*DT-DT*1.4, transform:'translateX(-50%) translateY(-100%)', pointerEvents:'none', zIndex:25, whiteSpace:'nowrap', textAlign:'center' }}>
+            <div style={{ background:'#fff', color:'#1a0828', border:'2px solid #aaa', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:700, whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(0,0,0,0.35)', fontFamily:'"Century Gothic",sans-serif' }}>
+              {crisAmMsgRef.current.slice(0, crisAmChars)}
+              {crisAmChars < crisAmMsgRef.current.length && <span style={{ opacity:0.4 }}>|</span>}
+            </div>
+            <div style={{ position:'absolute', bottom:-10, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'8px solid transparent', borderRight:'8px solid transparent', borderTop:'10px solid #aaa' }} />
+            <div style={{ position:'absolute', bottom:-7, left:'50%', transform:'translateX(-50%)', width:0, height:0, borderLeft:'7px solid transparent', borderRight:'7px solid transparent', borderTop:'9px solid #fff', zIndex:1 }} />
+          </div>
+        )}
 
         {/* Speech bubble above Cristian after being freed */}
         {crisFreeMsgChars > 0 && (
