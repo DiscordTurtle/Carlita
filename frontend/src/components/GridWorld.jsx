@@ -547,9 +547,13 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     return () => { clearInterval(wizId); clearInterval(crisId) }
   }, [scene, wizDead])
 
+  const WIZ_DEATH_MSG = 'NUUUUUUUUUUUUUUUUUUUU, ERAM ATAT DE APROAPE SA DEVIN PRO!!!'
   useEffect(() => {
     if (!wizAmTsRef.current || wizAmChars === 0) return
     const msg = wizAmMsgRef.current
+    if (wizDeadRef.current && msg !== WIZ_DEATH_MSG) {
+      wizAmTsRef.current = null; setWizAmChars(0); return
+    }
     const done = wizAmChars >= msg.length
     onChatMsg?.({ t: wizAmTsRef.current, msg: `[XxRapeWizardxX]: ${msg.slice(0, wizAmChars)}`, color: '#ff9090', icon: '#c060ff', done, commit: done })
     if (done) {
@@ -571,6 +575,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
   useEffect(() => {
     if (!crisAmTsRef.current || crisAmChars === 0) return
+    if (wizDeadRef.current) { crisAmTsRef.current = null; setCrisAmChars(0); return }
     const msg = crisAmMsgRef.current
     const done = crisAmChars >= msg.length
     onChatMsg?.({ t: crisAmTsRef.current, msg: `[Cristian]: ${msg.slice(0, crisAmChars)}`, color: '#f0c060', icon: '#4a88b8', done, commit: done })
