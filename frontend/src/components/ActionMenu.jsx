@@ -22,15 +22,13 @@ const ITEM_NAME = {
 export default function ActionMenu({ selected, onSelect, hasSeed, hasLetter, hasAnemonite }) {
   const slots = [
     { id: 'punch', icon: <PunchIcon />, count: null, enabled: true },
-    // Seed slot disappears (becomes empty) once the seed has been planted.
+    // Slot 2: seed while held, then letter once picked up, else empty.
     hasSeed
-      ? { id: 'seed',  icon: <Seed size={34} />, count: 1,    enabled: true  }
-      : { id: 'seed',  icon: null,                count: null, enabled: false },
-    // Letter appears in slot 3 once Carlita walks over the dropped letter.
-    hasLetter
-      ? { id: 'letter', icon: <LetterIcon />, count: 1,    enabled: true  }
-      : { id: 'empty1', icon: null,           count: null, enabled: false },
-    // Anemonite appears in slot 4 once picked up.
+      ? { id: 'seed',   icon: <Seed size={34} />, count: 1,    enabled: true  }
+      : hasLetter
+        ? { id: 'letter', icon: <LetterIcon />,   count: 1,    enabled: true  }
+        : { id: 'empty1', icon: null,              count: null, enabled: false },
+    // Slot 3: anemonite once picked up, else empty.
     hasAnemonite
       ? { id: 'anemonite', icon: <AnemoniteIcon />, count: 1, enabled: true }
       : { id: 'empty2',    icon: null, count: null, enabled: false }
@@ -125,12 +123,11 @@ function PunchIcon() {
 function AnemoniteIcon() {
   return (
     <img
-      src="/sprites/blocks/all/anemone.png"
+      src="/sprites/blocks/all/silver_anemonite.png"
       alt="anemonite"
       draggable={false}
       className="pixel"
-      style={{ width: 34, height: 34, imageRendering: 'pixelated', objectFit: 'contain',
-               filter: 'grayscale(0.5) brightness(1.4) contrast(1.1)' }}
+      style={{ width: 36, height: 36, imageRendering: 'pixelated', objectFit: 'contain' }}
     />
   )
 }

@@ -38,7 +38,7 @@ export default {
         'pop':        'pop 0.4s ease-out',
         'fall':       'fall 0.6s ease-in forwards',
         'fade-up':    'fadeUp 0.6s ease-out forwards',
-        'firework':   'firework 1.2s ease-out forwards',
+        'firework':   'firework 1.2s ease-out infinite',
         'sign-bob':   'signBob 3s ease-in-out infinite',
         'dance':      'dance 0.45s ease-in-out infinite'
       },

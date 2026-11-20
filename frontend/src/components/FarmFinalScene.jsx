@@ -199,9 +199,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     // Letter use — click anywhere
     if (tool === 'letter' && !letterUsedRef.current) {
       letterUsedRef.current = true
-      // Send Cristian's message to chatbox simultaneously
-      const ts = new Date().toTimeString().slice(0, 8)
-      onChatMsg?.({ t: ts, msg: `[Cristian]: ${CRIS_LETTER_ERR}`, color: '#f0c060', icon: '#4a88b8', done: true, commit: true })
+      typeMsg(CRIS_LETTER_ERR)
       setErrorLetter(true)
       setShowLetterModal(true)
       return true

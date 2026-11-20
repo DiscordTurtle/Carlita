@@ -52,9 +52,9 @@ export default function LetterModal({ onClose, errorMode = false }) {
     return (
       <div
         className="absolute inset-0 z-[200] flex items-center justify-center"
-        style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,.55), rgba(0,0,0,.85))' }}
+        style={{ background: 'transparent', pointerEvents: 'none' }}
       >
-        <div className="gt-panel w-[min(640px,92vw)] p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+        <div className="gt-panel w-[min(640px,92vw)] p-6 md:p-8" style={{ pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <span style={{ fontSize: 24 }}>♥</span>
