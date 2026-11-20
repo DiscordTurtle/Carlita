@@ -459,6 +459,10 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
     if (newHp <= 0) {
       wizDeadRef.current = true
+      const deathMsg = 'NUUUUUUUUUUUUUUUUUUUU, ERAM ATAT DE APROAPE SA DEVIN PRO!!!'
+      wizAmMsgRef.current = deathMsg
+      wizAmTsRef.current = new Date().toTimeString().slice(0, 8)
+      setWizAmChars(1)
       setWizDead(true)
       setWizDeadKey(k => k + 1)
       playSfx('/sounds/dialog-close.wav', { volume: 0.9 })
@@ -1067,7 +1071,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
         </>)}
 
         {/* Wizard ambient speech bubble */}
-        {wizAmChars > 0 && !wizDead && (
+        {wizAmChars > 0 && (
           <div style={{ position:'absolute', left:WIZ_COL*DT+DT/2, top:WIZ_ROW*DT-DT*3-20, transform:'translateX(-50%) translateY(-100%)', pointerEvents:'none', zIndex:25, whiteSpace:'nowrap', textAlign:'center' }}>
             <div style={{ background:'#fff', color:'#1a0828', border:'2px solid #c060ff', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:700, whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(0,0,0,0.35)', fontFamily:'"Century Gothic",sans-serif' }}>
               {wizAmMsgRef.current.slice(0, wizAmChars)}
