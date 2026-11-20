@@ -115,7 +115,7 @@ const RoFlag = () => (
   </span>
 )
 
-export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [], stepSounds = {}, bgMusic }) {
+export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg, scenePath = '/scenes/Parkour.json', worldLayerRef, onCustomInteraction, hideActionMenu, hoverNames, toolOverride, hideTiles = [], stepSounds = {}, bgMusic, danceMode = false }) {
   const [loading,      setLoading]      = useState(true)
   const [scene,        setScene]        = useState(null)
   const [hp,           setHp]           = useState(MAX_HP)
@@ -423,7 +423,10 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
       return
     }
 
-    if (effectiveSlot !== 'punch') return
+    if (effectiveSlot !== 'punch') {
+      onCustomInteraction?.(cPhysX, cPhysY, px, py)
+      return
+    }
 
     // Punch animation — only fires for in-range clicks
     setPunchVec({ angle, dist })
@@ -937,7 +940,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
           pointerEvents:'none', zIndex:20,
         }}>
           {/* Relative wrapper so soul can overlay the sprite */}
-          <div className={isWalking ? 'animate-walk' : 'animate-idle-bob'} style={{ position:'relative', display:'inline-block' }}>
+          <div className={danceMode ? 'animate-dance' : isWalking ? 'animate-walk' : 'animate-idle-bob'} style={{ position:'relative', display:'inline-block' }}>
             <img
               src="/sprites/carlita.png"
               alt="Carlita"

@@ -17,6 +17,9 @@ const ANEMONITE_DROP_COL = TREE_COL + 0.55
 
 const CRIS_MSG1 = "Of soricel, iti pregatisem un cadou asa de frumos, dar mickeymouseul de rape wizard mi-a furat samamnta :("
 const CRIS_MSG2 = "Yeeeey Carlita, ai gasit-o!!!!"
+const CRIS_ANEM1 = "Probabil te intrebi ce e asta"
+const CRIS_ANEM2 = "La multi ani, suarece drag!"
+const CRIS_LETTER_ERR = "Of, mereu bugurile astea ... bine ca am un backup ❤️ "
 
 export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   useEffect(() => {
@@ -29,10 +32,14 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const [seedInHand,        setSeedInHand]        = useState(hasSeed)
   const [hasLetter,         setHasLetter]         = useState(false)
   const [hasAnemonite,      setHasAnemonite]      = useState(false)
+  const [letterUsed,        setLetterUsed]        = useState(false)
+  const [anemoniteUsed,     setAnemoniteUsed]     = useState(false)
   const [letterOnGround,    setLetterOnGround]    = useState(false)
   const [anemoniteOnGround, setAnemoniteOnGround] = useState(false)
   const [showFireworks,     setShowFireworks]     = useState(false)
   const [showLetterModal,   setShowLetterModal]   = useState(false)
+  const [errorLetter,       setErrorLetter]       = useState(false)
+  const [danceMode,         setDanceMode]         = useState(false)
 
   const treeStateRef        = useRef('normal')
   const selToolRef          = useRef(hasSeed ? 'seed' : 'punch')
@@ -40,6 +47,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const letterOnGroundRef   = useRef(false)
   const anemoniteOnGroundRef= useRef(false)
   const itemDropTimeRef     = useRef(0)
+  const letterUsedRef       = useRef(false)
+  const anemoniteUsedRef    = useRef(false)
 
   const crisRef          = useRef(null)
   const treeOverlayRef   = useRef(null)
@@ -47,36 +56,25 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const anemDropRef      = useRef(null)
   const crisBubbleRef    = useRef(null)
   const crisBubbleSpanRef= useRef(null)
-  // Refs shared with RAF so bubble text updates without re-render
   const crisBubbleOnRef  = useRef(false)
   const crisBubbleMsgRef = useRef('')
 
-  // Trigger ending once both items are picked up
+  // Trigger ending once BOTH items have been used
   useEffect(() => {
-    if (!hasLetter || !hasAnemonite || showFireworks || showLetterModal) return
+    if (!letterUsed || !anemoniteUsed || showFireworks) return
     playSfx('/sounds/achievement.wav', { volume: 0.7 })
     setShowFireworks(true)
+    setDanceMode(true)
     playSfx('/sounds/firework.wav',  { volume: 0.7 })
     setTimeout(() => playSfx('/sounds/firework2.wav', { volume: 0.7 }), 350)
     setTimeout(() => playSfx('/sounds/firework.wav',  { volume: 0.6 }), 750)
-    setTimeout(() => setShowLetterModal(true), 900)
-  }, [hasLetter, hasAnemonite])
+  }, [letterUsed, anemoniteUsed])
 
   // Entry dialog — Cristian speaks when Carlita arrives
   useEffect(() => {
     const id = setTimeout(() => {
       playSfx('/sounds/whisper.mp3', { volume: 1.0 })
-      const ts = new Date().toTimeString().slice(0, 8)
-      crisBubbleOnRef.current = true
-      let i = 0
-      const type = () => {
-        i++
-        crisBubbleMsgRef.current = CRIS_MSG1.slice(0, i)
-        onChatMsg?.({ t: ts, msg: `[Cristian]: ${CRIS_MSG1.slice(0, i)}`, color: '#f0c060', icon: '#4a88b8', done: i >= CRIS_MSG1.length, commit: i >= CRIS_MSG1.length })
-        if (i < CRIS_MSG1.length) setTimeout(type, 45)
-        else setTimeout(() => { crisBubbleOnRef.current = false }, 4500)
-      }
-      type()
+      typeMsg(CRIS_MSG1)
     }, 1500)
     return () => clearTimeout(id)
   }, [])
@@ -130,8 +128,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       }
 
       if (player) {
-        const pCX = player.x + 10   // PLAYER_W / 2 = 20/2
-        const pFY = player.y + 28   // PLAYER_H
+        const pCX = player.x + 10
+        const pFY = player.y + 28
 
         if (letterOnGroundRef.current &&
             Date.now() - itemDropTimeRef.current > 800 &&
@@ -160,28 +158,60 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  function triggerMsg2() {
+  function typeMsg(text, onDone) {
     playSfx('/sounds/whisper.mp3', { volume: 1.0 })
     const ts = new Date().toTimeString().slice(0, 8)
     crisBubbleOnRef.current = true
     let i = 0
     const type = () => {
       i++
-      crisBubbleMsgRef.current = CRIS_MSG2.slice(0, i)
-      onChatMsg?.({ t: ts, msg: `[Cristian]: ${CRIS_MSG2.slice(0, i)}`, color: '#f0c060', icon: '#4a88b8', done: i >= CRIS_MSG2.length, commit: i >= CRIS_MSG2.length })
-      if (i < CRIS_MSG2.length) setTimeout(type, 45)
-      else setTimeout(() => { crisBubbleOnRef.current = false }, 3500)
+      crisBubbleMsgRef.current = text.slice(0, i)
+      onChatMsg?.({ t: ts, msg: `[Cristian]: ${text.slice(0, i)}`, color: '#f0c060', icon: '#4a88b8', done: i >= text.length, commit: i >= text.length })
+      if (i < text.length) {
+        setTimeout(type, 45)
+      } else {
+        setTimeout(() => { crisBubbleOnRef.current = false; onDone?.() }, 3500)
+      }
     }
     type()
   }
 
+  function triggerMsg2() {
+    typeMsg(CRIS_MSG2)
+  }
+
   function handleCustomInteraction(cPhysX, cPhysY, px) {
+    const tool = selToolRef.current
+
+    // Anemonite use — click anywhere
+    if (tool === 'anemonite' && !anemoniteUsedRef.current) {
+      anemoniteUsedRef.current = true
+      typeMsg(CRIS_ANEM1, () => {
+        setTimeout(() => typeMsg(CRIS_ANEM2, () => {
+          setAnemoniteUsed(true)
+          selToolRef.current = hasLetter ? 'letter' : 'punch'
+          setSelectedTool(hasLetter ? 'letter' : 'punch')
+        }), 1000)
+      })
+      return true
+    }
+
+    // Letter use — click anywhere
+    if (tool === 'letter' && !letterUsedRef.current) {
+      letterUsedRef.current = true
+      // Send Cristian's message to chatbox simultaneously
+      const ts = new Date().toTimeString().slice(0, 8)
+      onChatMsg?.({ t: ts, msg: `[Cristian]: ${CRIS_LETTER_ERR}`, color: '#f0c060', icon: '#4a88b8', done: true, commit: true })
+      setErrorLetter(true)
+      setShowLetterModal(true)
+      return true
+    }
+
     const nearTree = Math.abs(px - (TREE_COL * TILE + TILE / 2)) < TILE * 3
     const clickOnTree = cPhysX >= TREE_COL * TILE && cPhysX < (TREE_COL + 1) * TILE &&
                         cPhysY >= (TREE_ROW - 1) * TILE && cPhysY < (TREE_ROW + 1) * TILE
     if (!nearTree || !clickOnTree) return false
 
-    const tool = selToolRef.current
     const ts   = treeStateRef.current
 
     if (ts === 'normal' && tool === 'seed') {
@@ -191,12 +221,10 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       selToolRef.current = 'punch'
       setSelectedTool('punch')
       setSeedInHand(false)
-      // Tree becomes punchable after 3 seconds
       setTimeout(() => {
         treeStateRef.current = 'spliced'
         setTreeState('spliced')
       }, 3000)
-      // Cristian reacts after a beat
       setTimeout(triggerMsg2, 500)
       return true
     }
@@ -221,6 +249,21 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
     return false
   }
+
+  // Switch tool to letter/anemonite once picked up (if not already holding something useful)
+  useEffect(() => {
+    if (hasLetter && !letterUsedRef.current && selToolRef.current === 'punch') {
+      selToolRef.current = 'letter'
+      setSelectedTool('letter')
+    }
+  }, [hasLetter])
+
+  useEffect(() => {
+    if (hasAnemonite && !anemoniteUsedRef.current && selToolRef.current === 'punch') {
+      selToolRef.current = 'anemonite'
+      setSelectedTool('anemonite')
+    }
+  }, [hasAnemonite])
 
   const treeHoverName =
     treeState === 'spliced' ? 'Birthday Card Tree' :
@@ -247,6 +290,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         hoverNames={{ 'crystal_tree.png': treeHoverName }}
         stepSounds={{ 'house_entrance.png': '/sounds/door-open.mp3' }}
         hideTiles={treeState !== 'normal' ? [`${TREE_ROW - 1},${TREE_COL}`, `${TREE_ROW},${TREE_COL}`] : []}
+        danceMode={danceMode}
       />
 
       {/* Cristian */}
@@ -256,10 +300,11 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
           <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', textShadow: '-1px 0 #000,1px 0 #000,0 -1px #000,0 1px #000', fontFamily: '"Century Gothic",sans-serif' }}>Cristian</span>
         </div>
         <img src="/sprites/cristian.png" alt="Cristian"
-          style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block', transform: 'scaleX(-1)' }} />
+          style={{ width: 'auto', imageRendering: 'pixelated', filter: 'drop-shadow(-2px 2px 0 rgba(0,0,0,0.5))', display: 'block', transform: 'scaleX(-1)',
+                   animation: danceMode ? 'dance 0.45s ease-in-out infinite' : undefined }} />
       </div>
 
-      {/* Speech bubble above Cristian — RAF-positioned via refs */}
+      {/* Speech bubble above Cristian */}
       <div ref={crisBubbleRef} style={{ position:'fixed', display:'none', pointerEvents:'none', zIndex:30, textAlign:'center', transform:'translateX(-50%)' }}>
         <div style={{ background:'#fff', color:'#1a0828', border:'2px solid #aaa', borderRadius:8, padding:'7px 13px', fontSize:13, fontWeight:700, maxWidth:340, whiteSpace:'pre-wrap', boxShadow:'0 2px 8px rgba(0,0,0,0.35)', fontFamily:'"Century Gothic",sans-serif' }}>
           <span ref={crisBubbleSpanRef} />
@@ -297,7 +342,15 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
       {showFireworks && <Fireworks count={22} />}
       {showLetterModal && (
-        <LetterModal onClose={() => { setShowFireworks(false); setShowLetterModal(false) }} />
+        <LetterModal
+          errorMode={errorLetter}
+          onClose={() => {
+            setShowLetterModal(false)
+            if (!letterUsed) {
+              setLetterUsed(true)
+            }
+          }}
+        />
       )}
 
       <ActionMenu

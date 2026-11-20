@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { LETTER_LINES, ENDING_IMAGE } from '../letter.js'
 import { playSfx } from '../useAudio.js'
 
-export default function LetterModal({ onClose }) {
+export default function LetterModal({ onClose, errorMode = false }) {
   const [shown,       setShown]       = useState(0)
   const [showImage,   setShowImage]   = useState(false)
   const [imgFailed,   setImgFailed]   = useState(false)
@@ -12,6 +12,7 @@ export default function LetterModal({ onClose }) {
 
   // reveal next line
   const reveal = () => {
+    if (errorMode) return
     if (shown < LETTER_LINES.length) {
       setShown(s => s + 1)
       playSfx('/sounds/dialog-open.wav', { volume: 0.5 })
@@ -21,8 +22,9 @@ export default function LetterModal({ onClose }) {
     }
   }
 
-  // auto-advance lines, then glitch after photo appears
+  // auto-advance lines (skip in error mode), then glitch after photo appears
   useEffect(() => {
+    if (errorMode) { playSfx('/sounds/dialog-open.wav', { volume: 0.7 }); return }
     playSfx('/sounds/dialog-open.wav', { volume: 0.7 })
     timer.current = setInterval(() => {
       setShown(s => {
@@ -36,7 +38,7 @@ export default function LetterModal({ onClose }) {
       })
     }, 1500)
     return () => clearInterval(timer.current)
-  }, [])
+  }, [errorMode])
 
   // start glitch 4s after photo appears
   useEffect(() => {
@@ -45,6 +47,32 @@ export default function LetterModal({ onClose }) {
     const t2 = setTimeout(() => setCristianMsg(true), 6000)
     return () => { clearTimeout(t1); clearTimeout(t2) }
   }, [showImage])
+
+  if (errorMode) {
+    return (
+      <div
+        className="absolute inset-0 z-[200] flex items-center justify-center"
+        style={{ background: 'radial-gradient(circle at center, rgba(0,0,0,.55), rgba(0,0,0,.85))' }}
+      >
+        <div className="gt-panel w-[min(640px,92vw)] p-6 md:p-8" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span style={{ fontSize: 24 }}>♥</span>
+              <h2 className="text-2xl font-black text-[#3A1F0C]">A Letter for Carlita</h2>
+            </div>
+            <button
+              className="text-[#3A1F0C] font-black opacity-70 hover:opacity-100"
+              onClick={() => { playSfx('/sounds/dialog-close.wav'); onClose() }}
+              aria-label="Close"
+            >✕</button>
+          </div>
+          <div className="space-y-3 min-h-[120px] flex items-center justify-center">
+            <p className="text-[#3A1F0C] text-2xl font-black">Eroare :(</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div

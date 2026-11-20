@@ -39,7 +39,8 @@ export default {
         'fall':       'fall 0.6s ease-in forwards',
         'fade-up':    'fadeUp 0.6s ease-out forwards',
         'firework':   'firework 1.2s ease-out forwards',
-        'sign-bob':   'signBob 3s ease-in-out infinite'
+        'sign-bob':   'signBob 3s ease-in-out infinite',
+        'dance':      'dance 0.45s ease-in-out infinite'
       },
       keyframes: {
         walk:    { '0%': { transform: 'translateY(0px) rotate(-2deg)' }, '50%': { transform: 'translateY(-3px) rotate(2deg)' } },
@@ -52,7 +53,8 @@ export default {
         firework:{ '0%':   { transform: 'scale(0.1)', opacity: '1' },
                    '60%':  { transform: 'scale(1.4)', opacity: '0.9' },
                    '100%': { transform: 'scale(2)',   opacity: '0' } },
-        signBob: { '0%,100%': { transform: 'translateY(0) rotate(-1deg)' }, '50%': { transform: 'translateY(-3px) rotate(1deg)' } }
+        signBob: { '0%,100%': { transform: 'translateY(0) rotate(-1deg)' }, '50%': { transform: 'translateY(-3px) rotate(1deg)' } },
+        dance:   { '0%,100%': { transform: 'translateY(0) rotate(-5deg)' }, '50%': { transform: 'translateY(-8px) rotate(5deg)' } }
       }
     }
   },
