@@ -290,9 +290,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       {/* Dropped anemonite on ground */}
       <div ref={anemDropRef} style={{ position: 'fixed', pointerEvents: 'none', zIndex: 22, display: 'none', flexDirection: 'column', alignItems: 'center', animation: 'seedBob 2s ease-in-out infinite' }}>
         <div style={{ filter: 'drop-shadow(0 0 6px rgba(200,230,255,.9))' }}>
-          <img src="/sprites/blocks/all/anemone.png" alt="" draggable={false}
-            style={{ width: 26, imageRendering: 'pixelated', display: 'block',
-                     filter: 'grayscale(0.5) brightness(1.4)' }} />
+          <img src="/sprites/blocks/all/silver_anemonite.png" alt="" draggable={false}
+            style={{ width: 36, imageRendering: 'pixelated', display: 'block' }} />
         </div>
         <div style={{ fontSize: 8, color: '#fff', fontWeight: 700, textShadow: '0 0 3px #000,0 0 3px #000' }}>RIDICĂ</div>
       </div>

@@ -5,3 +5,4 @@ dist
 public/sprites/blocks/all/
 !public/sprites/blocks/all/red_crayon_seed.png
 !public/sprites/blocks/all/cherry_blossom_tree.png
+!public/sprites/blocks/all/silver_anemonite.png
