@@ -39,6 +39,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
   const doneRef             = useRef(false)
   const letterOnGroundRef   = useRef(false)
   const anemoniteOnGroundRef= useRef(false)
+  const itemDropTimeRef     = useRef(0)
 
   const crisRef          = useRef(null)
   const treeOverlayRef   = useRef(null)
@@ -133,6 +134,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         const pFY = player.y + 28   // PLAYER_H
 
         if (letterOnGroundRef.current &&
+            Date.now() - itemDropTimeRef.current > 800 &&
             Math.abs(pCX - LETTER_DROP_COL    * TILE) < TILE * 2 &&
             Math.abs(pFY - TREE_ROW * TILE) < TILE * 2) {
           letterOnGroundRef.current = false
@@ -142,6 +144,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
         }
 
         if (anemoniteOnGroundRef.current &&
+            Date.now() - itemDropTimeRef.current > 800 &&
             Math.abs(pCX - ANEMONITE_DROP_COL * TILE) < TILE * 2 &&
             Math.abs(pFY - TREE_ROW * TILE) < TILE * 2) {
           anemoniteOnGroundRef.current = false
@@ -205,6 +208,7 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       setTreeState('broken')
       letterOnGroundRef.current    = true
       anemoniteOnGroundRef.current = true
+      itemDropTimeRef.current      = Date.now()
       setLetterOnGround(true)
       setAnemoniteOnGround(true)
       return true
