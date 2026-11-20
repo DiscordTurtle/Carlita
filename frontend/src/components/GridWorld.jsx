@@ -521,7 +521,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
 
   // Wizard ambient messages — every 5s while alive
   useEffect(() => {
-    if (!scene || wizDead) return
+    if (!scene || wizDead || !scenePath.includes('Parkour')) return
     function startWizMsg() {
       if (wizAmTsRef.current || wizDeadRef.current) return
       let idx
