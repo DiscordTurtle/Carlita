@@ -65,14 +65,15 @@ const WIZ_MSGS = [
   'Te voi atinge, micule bro! Unde tineti toate wl-urile?',
   'Muahahaha, vei ramane in cusca pentru eternitate!',
   'Hahahaha, nici nu stii ce te asteapta!',
-  'Eram level 50 in lumea asta cand tu inca plantai iarba!',
+  'Sunt puternic, mai puternic decat voi! SUNT FOARTE PUTERNIC! (SI MALEFIC)',
   'Toata lumea fuge de XxRapeWizardxX!',
-  'Doneaza o wl si il eliberez pe prietenul tau. Poate.',
-  'Cage-ul asta e enchanted, micuta! Nu mai incerca.',
-  'Stii ce-mi place mie? Coral si sugarcane! Profit pur.',
-  'Daca nu vii mai repede, il fac noob de tot!',
+  'Doneaza un wl si il eliberez pe prietenul tau. Poate.',
+  'Cage-ul asta e enchanted, micutule! Nu mai incerca.',
+  'Hai o data ca mi-au crescut copacii de sugarcane si ma cearta mami daca nu vin la masa!',
+  'Daca nu vii mai repede, il pun la farmat sugarcane!',
   'Am 400 wl-uri. Tu ai? Nu, nu ai.',
-  'Hai, mai repede! Vrei sa-l salvezi sau nu?',
+  'Vrei sa il salvezi? Te speli? Ai parinti? Esti orfan?',
+
   'Vrei sa vezi ce am sub capotul asta mov?',
 ]
 const WIZ_CAPOT_MSG = 'Vrei sa vezi ce am sub capotul asta mov?'
@@ -80,9 +81,11 @@ const WIZ_CAPOT_MSG = 'Vrei sa vezi ce am sub capotul asta mov?'
 const CRIS_AM_MSGS = [
   'Wtf Carlita m-a inhatat vrajitorul ca pe Shalom :((',
   'Vino suanrece repede ca ma face nub :(',
-  'Vrajitorul asta inca farmeaza corali si sugarcane, ce nub',
+  'Vrajitorul asta inca farmeaza corali si sugarcane in 2026, ce nub!',
   'Suarece, barbosul asta cred ca are hec',
+  'Oare e mod? dc e broul asa mare? :(',
   'Onkeyy, banan are nevoie de niste ajutor :(',
+  'Fugi cu wl-urile suarice, lasa-ma pe mine aici ca oricum sunt pooron! WTF NEVERMIND SE TRAGE DE CAPOT, VINO REPEDE!'
 ]
 
 const BASE_URL = '/sprites/blocks/all/'
