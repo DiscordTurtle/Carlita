@@ -121,12 +121,12 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       if (letterDropRef.current) {
         letterDropRef.current.style.display = letterOnGroundRef.current ? 'flex' : 'none'
         letterDropRef.current.style.left = `${LETTER_DROP_COL * DT - cam.x}px`
-        letterDropRef.current.style.top  = `${TREE_ROW * DT - cam.y - DT * 1.1}px`
+        letterDropRef.current.style.top  = `${TREE_ROW * DT - cam.y}px`
       }
       if (anemDropRef.current) {
         anemDropRef.current.style.display = anemoniteOnGroundRef.current ? 'flex' : 'none'
         anemDropRef.current.style.left = `${ANEMONITE_DROP_COL * DT - cam.x}px`
-        anemDropRef.current.style.top  = `${TREE_ROW * DT - cam.y - DT * 1.1}px`
+        anemDropRef.current.style.top  = `${TREE_ROW * DT - cam.y}px`
       }
 
       if (player) {
@@ -293,7 +293,6 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
           <img src="/sprites/blocks/all/silver_anemonite.png" alt="" draggable={false}
             style={{ width: 36, imageRendering: 'pixelated', display: 'block' }} />
         </div>
-        <div style={{ fontSize: 8, color: '#fff', fontWeight: 700, textShadow: '0 0 3px #000,0 0 3px #000' }}>RIDICĂ</div>
       </div>
 
       {showFireworks && <Fireworks count={22} />}
