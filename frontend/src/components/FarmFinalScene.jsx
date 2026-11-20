@@ -121,12 +121,12 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
       if (letterDropRef.current) {
         letterDropRef.current.style.display = letterOnGroundRef.current ? 'flex' : 'none'
         letterDropRef.current.style.left = `${LETTER_DROP_COL * DT - cam.x}px`
-        letterDropRef.current.style.top  = `${(TREE_ROW - 1) * DT - cam.y}px`
+        letterDropRef.current.style.top  = `${TREE_ROW * DT - cam.y - DT * 1.1}px`
       }
       if (anemDropRef.current) {
         anemDropRef.current.style.display = anemoniteOnGroundRef.current ? 'flex' : 'none'
         anemDropRef.current.style.left = `${ANEMONITE_DROP_COL * DT - cam.x}px`
-        anemDropRef.current.style.top  = `${(TREE_ROW - 1) * DT - cam.y}px`
+        anemDropRef.current.style.top  = `${TREE_ROW * DT - cam.y - DT * 1.1}px`
       }
 
       if (player) {
@@ -135,8 +135,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
         if (letterOnGroundRef.current &&
             Date.now() - itemDropTimeRef.current > 800 &&
-            Math.abs(pCX - LETTER_DROP_COL    * TILE) < TILE * 2 &&
-            Math.abs(pFY - TREE_ROW * TILE) < TILE * 2) {
+            Math.abs(pCX - LETTER_DROP_COL    * TILE) < TILE * 1.5 &&
+            Math.abs(pFY - TREE_ROW * TILE) < TILE * 1.5) {
           letterOnGroundRef.current = false
           setLetterOnGround(false)
           setHasLetter(true)
@@ -145,8 +145,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
         if (anemoniteOnGroundRef.current &&
             Date.now() - itemDropTimeRef.current > 800 &&
-            Math.abs(pCX - ANEMONITE_DROP_COL * TILE) < TILE * 2 &&
-            Math.abs(pFY - TREE_ROW * TILE) < TILE * 2) {
+            Math.abs(pCX - ANEMONITE_DROP_COL * TILE) < TILE * 1.5 &&
+            Math.abs(pFY - TREE_ROW * TILE) < TILE * 1.5) {
           anemoniteOnGroundRef.current = false
           setAnemoniteOnGround(false)
           setHasAnemonite(true)
