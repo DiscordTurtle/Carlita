@@ -547,7 +547,7 @@ export default function GridWorld({ onComplete, onSeedPickup, onMenu, onChatMsg,
     if (!wizAmTsRef.current || wizAmChars === 0) return
     const msg = wizAmMsgRef.current
     const done = wizAmChars >= msg.length
-    onChatMsg?.({ t: wizAmTsRef.current, msg: `** from (XxRapeWizardxX) in [P4rkour] ** : ${msg.slice(0, wizAmChars)}`, color: '#ff9090', icon: '#c060ff', done, commit: done })
+    onChatMsg?.({ t: wizAmTsRef.current, msg: `[XxRapeWizardxX]: ${msg.slice(0, wizAmChars)}`, color: '#ff9090', icon: '#c060ff', done, commit: done })
     if (done) {
       wizAmTsRef.current = null
       if (capotPendingRef.current) {
