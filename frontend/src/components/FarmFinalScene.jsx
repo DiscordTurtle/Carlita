@@ -135,8 +135,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
         if (letterOnGroundRef.current &&
             Date.now() - itemDropTimeRef.current > 800 &&
-            Math.abs(pCX - LETTER_DROP_COL    * TILE) < TILE * 1.5 &&
-            Math.abs(pFY - TREE_ROW * TILE) < TILE * 1.5) {
+            Math.abs(pCX - LETTER_DROP_COL    * TILE) < TILE * 0.6 &&
+            Math.abs(pFY - TREE_ROW * TILE) < TILE * 1.2) {
           letterOnGroundRef.current = false
           setLetterOnGround(false)
           setHasLetter(true)
@@ -145,8 +145,8 @@ export default function FarmFinalScene({ onMenu, onChatMsg, hasSeed = true }) {
 
         if (anemoniteOnGroundRef.current &&
             Date.now() - itemDropTimeRef.current > 800 &&
-            Math.abs(pCX - ANEMONITE_DROP_COL * TILE) < TILE * 1.5 &&
-            Math.abs(pFY - TREE_ROW * TILE) < TILE * 1.5) {
+            Math.abs(pCX - ANEMONITE_DROP_COL * TILE) < TILE * 0.6 &&
+            Math.abs(pFY - TREE_ROW * TILE) < TILE * 1.2) {
           anemoniteOnGroundRef.current = false
           setAnemoniteOnGround(false)
           setHasAnemonite(true)
